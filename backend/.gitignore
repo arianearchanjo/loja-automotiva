@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+
+# Build / saída
+dist/
+*.tsbuildinfo
+
+# Ambiente (segredos reais NUNCA devem ser commitados)
+.env
+.env.local
+.env.*.local
+
+# Prisma
+prisma/migrations/dev.db*
+
+# Logs e cobertura
+*.log
+coverage/
+npm-debug.log*
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/

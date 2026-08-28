@@ -84,13 +84,22 @@ Para organizar o desenvolvimento, o projeto foi dividido em quatro frentes, uma 
 
 ## 📁 Documentação
 
-A especificação completa de requisitos (funcionais, não funcionais e regras de negócio) e a modelagem do sistema (casos de uso, modelo de dados e arquitetura) estão disponíveis em [`docs/especificacao-requisitos-sistema-comercial.md`](./docs/especificacao-requisitos-sistema-comercial.md).
+A documentação está organizada na pasta [`docs/`](./docs/), dividida por tema:
+
+- [Índice da documentação](./docs/README.md)
+- [Visão Geral](./docs/visao-geral.md)
+- [Requisitos (RF/RNF)](./docs/requisitos.md)
+- [Regras de Negócio (RN)](./docs/regras-de-negocio.md)
+- [Modelo de Dados (MER)](./docs/modelo-de-dados-mer.md)
+- [Arquitetura](./docs/arquitetura.md)
+- [Roadmap e Rastreabilidade](./docs/roadmap.md)
+- [Especificação Consolidada](./docs/especificacao-requisitos-sistema-comercial.md)
 
 ---
 
 ## 📦 Como executar o projeto
 
-> ⚠️ Instruções a serem detalhadas conforme o desenvolvimento avança.
+> ✅ **Etapa 1 (Configuração do Ambiente)** concluída: o back-end Node.js/Express, Prisma/MySQL, variáveis de ambiente e ferramentas (ESLint, Prettier, Vitest) estão configurados em [`backend/`](./backend). O front-end será incluído nas próximas etapas.
 
 ```bash
 # Clonar o repositório

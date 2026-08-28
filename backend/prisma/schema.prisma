@@ -1,0 +1,175 @@
+// Prisma schema — Loja Automotiva (MySQL)
+// Modelo de dados derivado da especificação de requisitos (seção 6.3).
+// Doc de referência: ../especificacao-requisitos-sistema-comercial.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Autenticação (Better Auth)
+// Tabelas esperadas pelo Better Auth; o model "User" é mapeado para
+// "usuario" para acompanhar a nomenclatura da especificação.
+// ---------------------------------------------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relações do Better Auth
+  sessions        Session[]
+  accounts        Account[]
+
+  // Relações de domínio
+  calculos        CalculoPreco[]
+  vendas          Venda[]
+  analises        AnaliseFinanceira[]
+  configuracao    Configuracao?
+
+  @@map("usuario")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Domínio
+// ---------------------------------------------------------------------------
+enum TipoCalculo {
+  direto
+  reverso
+}
+
+enum OrigemRelatorio {
+  calculo
+  analise
+}
+
+enum FormatoRelatorio {
+  pdf
+  xlsx
+}
+
+model CalculoPreco {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome            String
+  tipo            TipoCalculo
+  precoVenda      Decimal?     @db.Decimal(12, 4)
+  custoCompra     Decimal?     @db.Decimal(12, 4)
+  frete           Decimal?     @db.Decimal(12, 4)
+  taxaPlataforma  Decimal?     @db.Decimal(12, 4)
+  margemDesejada  Decimal?     @db.Decimal(12, 4)
+  resultado       Decimal?     @db.Decimal(12, 4)
+  analiseId       String?
+  analise         AnaliseFinanceira? @relation(fields: [analiseId], references: [id], onDelete: SetNull)
+  criadoEm        DateTime     @default(now())
+
+  @@index([userId])
+  @@map("calculo_preco")
+}
+
+model Venda {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receita    Decimal  @db.Decimal(12, 4)
+  custoTotal Decimal  @db.Decimal(12, 4)
+  lucroBruto Decimal  @db.Decimal(12, 4)
+  dataVenda  DateTime
+  criadoEm   DateTime @default(now())
+
+  analises   AnaliseFinanceira[]
+
+  @@index([userId])
+  @@map("venda")
+}
+
+model AnaliseFinanceira {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodoInicio DateTime
+  periodoFim   DateTime
+  receitaTotal Decimal  @db.Decimal(12, 4)
+  custoTotal   Decimal  @db.Decimal(12, 4)
+  lucroTotal   Decimal  @db.Decimal(12, 4)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  calculos     CalculoPreco[]
+  vendas       Venda[]
+
+  @@index([userId])
+  @@map("analise_financeira")
+}
+
+model Relatorio {
+  id         String            @id @default(cuid())
+  origemTipo OrigemRelatorio
+  origemId   String
+  formato    FormatoRelatorio
+  geradoEm   DateTime          @default(now())
+
+  @@index([origemId])
+  @@map("relatorio")
+}
+
+model Configuracao {
+  id                   String @id @default(cuid())
+  userId               String @unique
+  user                 User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferenciasDashboard Json
+  versaoSistema        String
+
+  @@map("configuracao")
+}
