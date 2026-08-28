@@ -38,6 +38,21 @@ Inicialmente serão desenvolvidas as funcionalidades essenciais (MVP), deixando 
 
 ---
 
+## 🧩 Divisão de Trabalho
+
+Para organizar o desenvolvimento, o projeto foi dividido em quatro frentes, uma para cada integrante. A divisão segue os módulos definidos na [especificação de requisitos](./docs/especificacao-requisitos-sistema-comercial.md), mas a equipe pode revisar as atribuições conforme o projeto avança.
+
+| Integrante | Frente | Responsabilidades |
+|---|---|---|
+| _(a definir)_ | Back-end & Autenticação | Estrutura da API (Node.js/Express), modelagem do banco (Prisma/MySQL), autenticação e sessão (Better Auth), regras de acesso (RN01–RN08, RN65) |
+| _(a definir)_ | Front-end & Dashboard | Interface do painel (React/Tailwind CSS), dashboard interativo e personalizável (RF02, RN07–RN08), integração com a API |
+| _(a definir)_ | Motor de Cálculos | Lógica de cálculo direto e reverso de preço (RF03–RF06, RF04.1), validações de entrada (Zod, RN09–RN18), testes automatizados (Vitest) |
+| _(a definir)_ | Módulo Financeiro & Relatórios | Registro de vendas e análises financeiras (RF08–RF12, RN28–RN43), geração de gráficos (Chart.js) e exportação de relatórios (jsPDF/ExcelJS) |
+
+> 💡 As frentes são interdependentes — por exemplo, o dashboard consome dados do motor de cálculos e do módulo financeiro. Alinhamentos periódicos entre a equipe são recomendados para manter os contratos de API (rotas, formatos de dados) consistentes entre as partes.
+
+---
+
 ## 🛠️ Tecnologias utilizadas
 
 ### Back-end
@@ -113,6 +128,7 @@ npm run dev
 | **v1.1** | Relatórios de cálculo, configurações básicas |
 | **v1.2** | Módulo financeiro (registro de vendas e análises) |
 | **v1.3** | Relatórios financeiros, contato/notas do desenvolvedor, tempo de uso, versão |
+
 ---
 
 ## 📄 Licença
