@@ -353,7 +353,7 @@ flowchart LR
 
     subgraph Dados
         Prisma[Prisma ORM]
-        MySQL[(MySQL)]
+        PostgreSQL[(PostgreSQL)]
     end
 
     subgraph Saida["Geração de Saída"]
@@ -366,7 +366,7 @@ flowchart LR
     Routes --> Auth
     Routes --> Val
     Routes --> Prisma
-    Prisma --> MySQL
+    Prisma --> PostgreSQL
     R --> Chart
     Routes --> PDF
     Routes --> XLS
@@ -378,7 +378,7 @@ flowchart LR
 | Back-end | Node.js + Express | API REST que expõe as regras de negócio |
 | Autenticação | Better Auth | Login, logout, sessão (RN01–RN06) |
 | Validação | Zod | Validação de payloads no servidor (RN09–RN14, RNF03) |
-| Persistência | Prisma + MySQL | Modelo de dados relacional (seção 6.3) |
+| Persistência | Prisma + PostgreSQL | Modelo de dados relacional (seção 6.3) |
 | Gráficos | Chart.js | Visualizações no dashboard e nas análises financeiras |
 | Relatórios | jsPDF / ExcelJS | Exportação de relatórios (RF07, RF12, RNF08) |
 | Qualidade | ESLint, Prettier, Vitest | Padronização e testes automatizados (RNF07) |
