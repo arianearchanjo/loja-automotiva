@@ -5,6 +5,7 @@ organizada em partes para facilitar a consulta e manutenção.
 
 | Documento | Conteúdo |
 |---|---|
+| [Configuração do Ambiente](./configuracao-ambiente.md) | Pré-requisitos, instalação e execução do projeto |
 | [Visão Geral](./visao-geral.md) | Objetivo, visão geral, stakeholders e escopo |
 | [Requisitos](./requisitos.md) | Requisitos funcionais (RF) e não funcionais (RNF) |
 | [Regras de Negócio](./regras-de-negocio.md) | Regras de negócio (RN), agrupadas por módulo |
