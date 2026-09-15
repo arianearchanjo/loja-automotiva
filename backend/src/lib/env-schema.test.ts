@@ -4,7 +4,7 @@ import { envSchema } from "./env-schema.js";
 describe("envSchema", () => {
   it("aplica valores padrão para campos opcionais", () => {
     const result = envSchema.parse({
-      DATABASE_URL: "mysql://user:pass@localhost:3306/db",
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
       BETTER_AUTH_SECRET: "segredo-suficientemente-longo-123",
     });
 
@@ -15,7 +15,7 @@ describe("envSchema", () => {
 
   it("rejeita BETTER_AUTH_SECRET curto", () => {
     const result = envSchema.safeParse({
-      DATABASE_URL: "mysql://user:pass@localhost:3306/db",
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
       BETTER_AUTH_SECRET: "curto",
     });
 
@@ -24,7 +24,7 @@ describe("envSchema", () => {
 
   it("converte PORT de string para número", () => {
     const result = envSchema.parse({
-      DATABASE_URL: "mysql://user:pass@localhost:3306/db",
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
       BETTER_AUTH_SECRET: "segredo-suficientemente-longo-123",
       PORT: "4000",
     });

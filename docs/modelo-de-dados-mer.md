@@ -6,7 +6,7 @@
 > [Roadmap](./roadmap.md).
 
 Modelo Entidade-Relacionamento (MER) do sistema, derivado da especificação (seção 6.3).
-A implementação física em Prisma/MySQL está em
+A implementação física em Prisma/PostgreSQL está em
 [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma).
 
 ## MER (Diagrama Entidade-Relacionamento)
@@ -106,7 +106,7 @@ erDiagram
 
 - O `CALCULO_PRECO.tipo` é implementado como `enum TipoCalculo { direto, reverso }`.
 - `RELATORIO.origemTipo` e `formato` são `enum`s (`OrigemRelatorio`, `FormatoRelatorio`).
-- Valores monetários usam `Decimal(12, 4)` no MySQL.
+- Valores monetários usam `Decimal(12, 4)` no PostgreSQL.
 - `RELATORIO` é **polimórfico** (origem pode ser cálculo ou análise); por isso não há
   relação Prisma direta — o vínculo é feito por `origemTipo` + `origemId`.
 - O vínculo opcional `CALCULO_PRECO → ANALISE_FINANCEIRA` implementa a RN24 (cálculo

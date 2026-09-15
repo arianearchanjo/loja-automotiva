@@ -44,7 +44,7 @@ Para organizar o desenvolvimento, o projeto foi dividido em quatro frentes, uma 
 
 | Integrante | Frente | Responsabilidades |
 |---|---|---|
-| _(a definir)_ | Back-end & Autenticação | Estrutura da API (Node.js/Express), modelagem do banco (Prisma/MySQL), autenticação e sessão (Better Auth), regras de acesso (RN01–RN08, RN65) |
+| _(a definir)_ | Back-end & Autenticação | Estrutura da API (Node.js/Express), modelagem do banco (Prisma/PostgreSQL), autenticação e sessão (Better Auth), regras de acesso (RN01–RN08, RN65) |
 | _(a definir)_ | Front-end & Dashboard | Interface do painel (React/Tailwind CSS), dashboard interativo e personalizável (RF02, RN07–RN08), integração com a API |
 | _(a definir)_ | Motor de Cálculos | Lógica de cálculo direto e reverso de preço (RF03–RF06, RF04.1), validações de entrada (Zod, RN09–RN18), testes automatizados (Vitest) |
 | _(a definir)_ | Módulo Financeiro & Relatórios | Registro de vendas e análises financeiras (RF08–RF12, RN28–RN43), geração de gráficos (Chart.js) e exportação de relatórios (jsPDF/ExcelJS) |
@@ -59,7 +59,7 @@ Para organizar o desenvolvimento, o projeto foi dividido em quatro frentes, uma 
 
 - [Node.js](https://nodejs.org/) — ambiente de execução JavaScript no back-end
 - [Express](https://expressjs.com/) — framework para as rotas da API
-- [MySQL](https://www.mysql.com/) — banco de dados relacional
+- [PostgreSQL](https://www.postgresql.org/) — banco de dados relacional
 - [Prisma](https://www.prisma.io/) — ORM para acesso e migrações do banco de dados
 - [Better Auth](https://www.better-auth.com/) — biblioteca de autenticação
 - [Zod](https://zod.dev/) — validação de dados de entrada
@@ -99,7 +99,7 @@ A documentação está organizada na pasta [`docs/`](./docs/), dividida por tema
 
 ## 📦 Como executar o projeto
 
-> ✅ **Etapa 1 (Configuração do Ambiente)** concluída: o back-end Node.js/Express, Prisma/MySQL, variáveis de ambiente e ferramentas (ESLint, Prettier, Vitest) estão configurados em [`backend/`](./backend). O front-end será incluído nas próximas etapas.
+> ✅ **Etapa 1 (Configuração do Ambiente)** concluída: o back-end Node.js/Express, Prisma/PostgreSQL, variáveis de ambiente e ferramentas (ESLint, Prettier, Vitest) estão configurados em [`backend/`](./backend). O front-end será incluído nas próximas etapas.
 
 ```bash
 # Clonar o repositório

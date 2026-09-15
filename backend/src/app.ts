@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { env } from "./env.js";
@@ -6,6 +6,11 @@ import { auth } from "./lib/auth.js";
 import { calculosRouter } from "./routes/calculos.js";
 import { vendasRouter } from "./routes/vendas.js";
 import { analisesRouter } from "./routes/analises.js";
+import {
+  registerFailure,
+  registerSuccess,
+  loginGuard,
+} from "./lib/login-guard.js";
 
 export const app: Express = express();
 
@@ -17,7 +22,28 @@ app.use(
 );
 app.use(express.json());
 
-app.all("/api/auth/*", toNodeHandler(auth));
+// Better Auth expõe suas rotas em /api/auth
+app.all(
+  "/api/auth/*",
+  loginGuard,
+  (req: Request, res: Response, next: express.NextFunction) => {
+    const handler = toNodeHandler(auth);
+
+    res.on("finish", () => {
+      if (req.path.includes("/sign-in") && req.method === "POST") {
+        const email = (req.body?.email ?? "").toString().toLowerCase();
+        if (!email) return;
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          registerFailure(email);
+        } else {
+          registerSuccess(email);
+        }
+      }
+    });
+
+    return handler(req, res, next);
+  },
+);
 
 app.use("/api/calculos", calculosRouter);
 app.use("/api/vendas", vendasRouter);

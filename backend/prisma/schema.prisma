@@ -1,4 +1,4 @@
-// Prisma schema — Loja Automotiva (MySQL)
+// Prisma schema — Loja Automotiva (PostgreSQL)
 // Modelo de dados derivado da especificação de requisitos (seção 6.3).
 // Doc de referência: ../especificacao-requisitos-sistema-comercial.md
 
@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

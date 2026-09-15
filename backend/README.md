@@ -1,13 +1,13 @@
 # Back-end — Loja Automotiva
 
-API REST em **Node.js + Express + TypeScript**, com **Prisma** (MySQL) e **Better Auth**.
+API REST em **Node.js + Express + TypeScript**, com **Prisma** (PostgreSQL) e **Better Auth**.
 
 > Esta pasta corresponde à **Etapa 1 — Configuração do Ambiente**.
 
 ## Pré-requisitos
 
 - Node.js >= 20
-- MySQL 8.x em execução (local ou container)
+- PostgreSQL 16+ em execução (local ou container)
 - `npm` (acompanha o Node)
 
 ## Instalação
@@ -21,7 +21,7 @@ Gere o client do Prisma e crie o banco:
 
 ```bash
 npm run db:generate          # gera o Prisma Client
-npm run db:migrate           # cria as tabelas no MySQL (migração inicial)
+npm run db:migrate           # cria as tabelas no PostgreSQL (migração inicial)
 ```
 
 ## Scripts
@@ -42,7 +42,7 @@ npm run db:migrate           # cria as tabelas no MySQL (migração inicial)
 ```
 backend/
 ├── prisma/
-│   └── schema.prisma        # modelo de dados (MySQL)
+│   └── schema.prisma        # modelo de dados (PostgreSQL)
 ├── src/
 │   ├── env.ts               # validação de variáveis (Zod)
 │   ├── lib/
@@ -59,6 +59,6 @@ backend/
 
 Veja `.env.example`. Destaques:
 
-- `DATABASE_URL` — `mysql://USUARIO:SENHA@HOST:PORTA/BANCO`
+- `DATABASE_URL` — `postgresql://USUARIO:SENHA@HOST:PORTA/BANCO`
 - `BETTER_AUTH_SECRET` — gere com `openssl rand -base64 32`
 - `BETTER_AUTH_URL` / `FRONTEND_URL` — URLs de callback e CORS
