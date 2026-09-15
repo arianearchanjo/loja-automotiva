@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #020617;
+  --color-surface: #0b1120;
+  --color-surface-strong: #0f172a;
+  --color-border: #1e293b;
+  --color-muted: #94a3b8;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  background-color: var(--color-background);
+  color: #e2e8f0;
+}
+
+input, select, button {
+  color-scheme: dark;
+}
