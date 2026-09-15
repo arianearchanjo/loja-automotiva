@@ -26,7 +26,7 @@ app.use(express.json());
 app.all(
   "/api/auth/*",
   loginGuard,
-  (req: Request, res: Response, next: express.NextFunction) => {
+  (req: Request, res: Response) => {
     const handler = toNodeHandler(auth);
 
     res.on("finish", () => {
@@ -41,7 +41,7 @@ app.all(
       }
     });
 
-    return handler(req, res, next);
+    return handler(req, res);
   },
 );
 

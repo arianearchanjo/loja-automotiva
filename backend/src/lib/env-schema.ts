@@ -14,7 +14,8 @@ export const envSchema = z.object({
   SEED_ADMIN_EMAIL: z.string().email().default("admin@loja.com"),
   SEED_ADMIN_PASSWORD: z
     .string()
-    .min(8, "SEED_ADMIN_PASSWORD deve ter ao menos 8 caracteres"),
+    .min(8, "SEED_ADMIN_PASSWORD deve ter ao menos 8 caracteres")
+    .default("senha-segura-123"),
   SEED_ADMIN_NAME: z.string().min(1).default("Administrador"),
 });
 

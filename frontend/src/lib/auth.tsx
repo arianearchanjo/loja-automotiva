@@ -1,4 +1,5 @@
-import { type ReactNode, createContext, useContext, useState } from "react";
+import { type ReactNode, createContext, useContext } from "react";
+import { authClient } from "./auth-client";
 
 interface User {
   id: string;
@@ -9,17 +10,20 @@ interface User {
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading] = useState(true);
+  const { data, isPending } = authClient.useSession();
+
+  const sessionUser = data?.user ?? null;
+  const user: User | null = sessionUser
+    ? { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email }
+    : null;
 
   return (
-    <AuthContext.Provider value={{ user, loading, setUser }}>
+    <AuthContext.Provider value={{ user, loading: isPending }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,17 +1,196 @@
-export default function Dashboard() {
+import { useEffect, useMemo, useState } from "react";
+import { calculosApi, vendasApi, type Calculo, type Venda } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { Badge, Card, CardHeader, EmptyState, PageHeader, Stat, Td, Th } from "../components/ui";
+import { formatBRL, formatDate, formatDateTime, formatPercent } from "../lib/format";
+
+function IconMoney() {
   return (
-    <div className="px-4 sm:px-0">
-      <h1 className="text-2xl font-bold text-white mb-6">Dashboard</h1>
-      <div className="bg-surface border border-border shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <p className="text-muted">
-            Bem-vindo ao sistema de gestão comercial e financeira.
-          </p>
-          <p className="mt-2 text-muted">
-            Use o menu para acessar cálculos de preço, vendas e análises financeiras.
-          </p>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <rect x="3" y="6" width="18" height="13" rx="2" />
+      <circle cx="12" cy="12.5" r="3" />
+      <path d="M6.5 9h.01M17.5 16h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconTrend() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <path d="M3 17l5-5 4 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 8h4v4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconCalc() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 8h6M9 12h.01M13 12h.01M9 16h.01M13 16h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function monthKey(date: string): string {
+  return new Date(date).toISOString().slice(0, 7);
+}
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const [vendas, setVendas] = useState<Venda[]>([]);
+  const [calculos, setCalculos] = useState<Calculo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    Promise.all([vendasApi.list(), calculosApi.list()])
+      .then(([v, c]) => {
+        setVendas(v);
+        setCalculos(c);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Erro ao carregar dados"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const kpis = useMemo(() => {
+    const receita = vendas.reduce((acc, v) => acc + Number(v.receita), 0);
+    const custo = vendas.reduce((acc, v) => acc + Number(v.custoTotal), 0);
+    const lucro = vendas.reduce((acc, v) => acc + Number(v.lucroBruto), 0);
+    const margem = receita > 0 ? (lucro / receita) * 100 : 0;
+    return { receita, custo, lucro, margem };
+  }, [vendas]);
+
+  const monthly = useMemo(() => {
+    const now = new Date();
+    const map = new Map<string, { receita: number; custo: number; lucro: number }>();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      map.set(key, { receita: 0, custo: 0, lucro: 0 });
+    }
+    for (const v of vendas) {
+      const key = monthKey(v.dataVenda);
+      const entry = map.get(key);
+      if (entry) {
+        entry.receita += Number(v.receita);
+        entry.custo += Number(v.custoTotal);
+        entry.lucro += Number(v.lucroBruto);
+      }
+    }
+    return [...map.entries()].map(([key, value]) => ({
+      label: new Date(`${key}-01T00:00:00`).toLocaleDateString("pt-BR", { month: "short" }),
+      ...value,
+    }));
+  }, [vendas]);
+
+  const maxLucro = Math.max(...monthly.map((m) => m.lucro), 0) || 1;
+  const recentVendas = [...vendas].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 5);
+  const recentCalculos = [...calculos].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 5);
+
+  return (
+    <div className="animate-fade-up">
+      <PageHeader
+        title={`Olá, ${user?.name?.split(" ")[0] ?? ""}`}
+        subtitle="Resumo geral do seu movimento comercial e financeiro."
+      />
+
+      {error && (
+        <div className="mb-6 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {error}
         </div>
-      </div>
+      )}
+
+      {loading ? (
+        <p className="text-muted">Carregando dados...</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Stat label="Receita total" value={formatBRL(kpis.receita)} delta={`${vendas.length} venda(s) registrada(s)`} tone="primary" icon={<IconMoney />} />
+            <Stat label="Custo total" value={formatBRL(kpis.custo)} tone="warning" icon={<IconTrend />} />
+            <Stat label="Lucro bruto" value={formatBRL(kpis.lucro)} tone="success" icon={<IconTrend />} />
+            <Stat label="Margem média" value={formatPercent(kpis.margem)} delta={`${calculos.length} cálculo(s) salvos`} tone="accent" icon={<IconCalc />} />
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+            <Card className="p-5 lg:col-span-3">
+              <CardHeader title="Lucro mensal" subtitle="Últimos 6 meses de vendas" />
+              <div className="mt-6 flex h-48 items-end gap-3 px-2">
+                {monthly.map((m) => (
+                  <div key={m.label} className="group flex flex-1 flex-col items-center gap-2">
+                    <div className="flex w-full flex-1 items-end">
+                      <div
+                        className="w-full rounded-t-lg bg-gradient-to-t from-primary to-accent transition-all group-hover:brightness-125"
+                        style={{ height: `${Math.max((m.lucro / maxLucro) * 100, 2)}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-medium capitalize text-muted">{m.label}</span>
+                    <span className="text-[10px] tabular-nums text-muted/70">
+                      {m.lucro > 0 ? formatBRL(m.lucro) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader title="Últimas vendas" subtitle="Registros mais recentes" />
+              <div className="mt-4 divide-y divide-border/70">
+                {recentVendas.length === 0 ? (
+                  <EmptyState title="Nenhuma venda ainda" hint="Cadastre vendas na página de Vendas." />
+                ) : (
+                  recentVendas.map((v) => (
+                    <div key={v.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white">{formatBRL(v.receita)}</p>
+                        <p className="text-xs text-muted">{formatDate(v.dataVenda)}</p>
+                      </div>
+                      <Badge tone={Number(v.lucroBruto) >= 0 ? "success" : "danger"}>
+                        {Number(v.lucroBruto) >= 0 ? "+" : ""}
+                        {formatBRL(v.lucroBruto)}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+
+          <Card className="mt-6 overflow-hidden">
+            <CardHeader title="Cálculos recentes" subtitle="Preço de venda direto e reverso" />
+            <div className="mt-4 overflow-x-auto">
+              {recentCalculos.length === 0 ? (
+                <EmptyState title="Nenhum cálculo ainda" hint="Use a página de Cálculos de Preço para começar." />
+              ) : (
+                <table className="w-full text-left">
+                  <thead className="sr-only sm:not-sr-only">
+                    <tr>
+                      <Th>Nome</Th>
+                      <Th>Tipo</Th>
+                      <Th>Preço de venda</Th>
+                      <Th>Resultado</Th>
+                      <Th>Criado em</Th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70">
+                    {recentCalculos.map((c) => (
+                      <tr key={c.id} className="transition-colors hover:bg-white/[0.02]">
+                        <Td className="font-medium text-white">{c.nome}</Td>
+                        <Td>
+                          <Badge tone={c.tipo === "direto" ? "accent" : "primary"}>{c.tipo}</Badge>
+                        </Td>
+                        <Td className="tabular-nums text-muted">{formatBRL(c.precoVenda)}</Td>
+                        <Td className="tabular-nums font-semibold text-white">{formatBRL(c.resultado)}</Td>
+                        <Td className="text-muted">{formatDateTime(c.criadoEm)}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

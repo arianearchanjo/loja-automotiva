@@ -13,10 +13,10 @@ datasource db {
 
 // ---------------------------------------------------------------------------
 // Autenticação (Better Auth)
-// Tabelas esperadas pelo Better Auth; o model "User" é mapeado para
-// "usuario" para acompanhar a nomenclatura da especificação.
+// Tabelas esperadas pelo Better Auth; o model é chamado de "Usuario" para
+// acompanhar a nomenclatura da especificação.
 // ---------------------------------------------------------------------------
-model User {
+model Usuario {
   id            String    @id @default(cuid())
   name          String
   email         String    @unique
@@ -47,7 +47,7 @@ model Session {
   ipAddress String?
   userAgent String?
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -57,7 +57,7 @@ model Account {
   accountId             String
   providerId            String
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -101,7 +101,7 @@ enum FormatoRelatorio {
 model CalculoPreco {
   id              String       @id @default(cuid())
   userId          String
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            Usuario       @relation(fields: [userId], references: [id], onDelete: Cascade)
   nome            String
   tipo            TipoCalculo
   precoVenda      Decimal?     @db.Decimal(12, 4)
@@ -121,7 +121,7 @@ model CalculoPreco {
 model Venda {
   id         String   @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
   receita    Decimal  @db.Decimal(12, 4)
   custoTotal Decimal  @db.Decimal(12, 4)
   lucroBruto Decimal  @db.Decimal(12, 4)
@@ -137,7 +137,7 @@ model Venda {
 model AnaliseFinanceira {
   id           String   @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
   periodoInicio DateTime
   periodoFim   DateTime
   receitaTotal Decimal  @db.Decimal(12, 4)
@@ -167,7 +167,7 @@ model Relatorio {
 model Configuracao {
   id                   String @id @default(cuid())
   userId               String @unique
-  user                 User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
   preferenciasDashboard Json
   versaoSistema        String
 

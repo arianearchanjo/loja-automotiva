@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { analisesApi, type Analise } from "../lib/api";
+import { Button, Card, CardHeader, EmptyState, Field, PageHeader, Td, Th } from "../components/ui";
+import { formatBRL, formatDate, formatDateTime } from "../lib/format";
+
+const emptyForm = {
+  periodoInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    .toISOString()
+    .slice(0, 10),
+  periodoFim: new Date().toISOString().slice(0, 10),
+};
 
 export default function Analises() {
   const [analises, setAnalises] = useState<Analise[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    periodoInicio: "",
-    periodoFim: "",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const load = async () => {
     try {
@@ -31,13 +37,12 @@ export default function Analises() {
 
     try {
       await analisesApi.create({
-        periodoInicio: form.periodoInicio,
-        periodoFim: form.periodoFim,
+        periodoInicio: new Date(form.periodoInicio).toISOString(),
+        periodoFim: new Date(form.periodoFim).toISOString(),
       });
-      setForm({ periodoInicio: "", periodoFim: "" });
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar");
+      setError(err instanceof Error ? err.message : "Erro ao gerar análise");
     }
   };
 
@@ -47,85 +52,90 @@ export default function Analises() {
       await analisesApi.delete(id);
       setAnalises((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao excluir");
+      setError(err instanceof Error ? err.message : "Erro ao excluir");
     }
   };
 
   return (
-    <div className="px-4 sm:px-0">
-      <h1 className="text-2xl font-bold text-white mb-6">Análises Financeiras</h1>
+    <div className="animate-fade-up">
+      <PageHeader
+        title="Análises Financeiras"
+        subtitle="Gere análises por período: o sistema resume vendas, custos e lucro automaticamente."
+      />
 
-      <div className="bg-surface border border-border shadow sm:rounded-lg mb-6">
-        <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-lg font-medium text-white mb-4">Nova Análise</h2>
-          {error && (
-            <div className="mb-4 bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-muted">Período Início</label>
-              <input
-                type="date"
-                required
-                className="mt-1 block w-full border border-border bg-surface-strong text-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={form.periodoInicio}
-                onChange={(e) => setForm({ ...form, periodoInicio: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-muted">Período Fim</label>
-              <input
-                type="date"
-                required
-                className="mt-1 block w-full border border-border bg-surface-strong text-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={form.periodoFim}
-                onChange={(e) => setForm({ ...form, periodoFim: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Gerar Análise
-              </button>
-            </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <Card className="h-fit xl:col-span-1">
+          <CardHeader title="Nova análise" subtitle="Selecione o período" />
+          <form onSubmit={handleSubmit} className="space-y-4 p-5">
+            {error && (
+              <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+                {error}
+              </div>
+            )}
+
+            <Field
+              label="Início do período"
+              type="date"
+              required
+              value={form.periodoInicio}
+              onChange={(e) => setForm({ ...form, periodoInicio: e.target.value })}
+            />
+            <Field
+              label="Fim do período"
+              type="date"
+              required
+              value={form.periodoFim}
+              onChange={(e) => setForm({ ...form, periodoFim: e.target.value })}
+            />
+            <Button type="submit" className="w-full">
+              Gerar análise
+            </Button>
           </form>
-        </div>
-      </div>
+        </Card>
 
-      <div className="bg-surface border border-border shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-lg font-medium text-white mb-4">Histórico</h2>
-          {loading ? (
-            <p className="text-muted">Carregando...</p>
-          ) : analises.length === 0 ? (
-            <p className="text-muted">Nenhuma análise registrada.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {analises.map((a) => (
-                <li key={a.id} className="py-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      Receita: R$ {Number(a.receitaTotal).toFixed(2)} • Lucro: R$ {Number(a.lucroTotal).toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted">
-                      {new Date(a.periodoInicio).toLocaleDateString()} - {new Date(a.periodoFim).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    className="text-red-400 hover:text-red-300 text-sm"
-                  >
-                    Excluir
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <Card className="overflow-hidden xl:col-span-2">
+          <CardHeader title="Histórico" subtitle={`${analises.length} análise(s) gerada(s)`} />
+          <div className="mt-4 overflow-x-auto">
+            {loading ? (
+              <p className="px-5 py-10 text-center text-muted">Carregando...</p>
+            ) : analises.length === 0 ? (
+              <EmptyState title="Nenhuma análise ainda" hint="Selecione um período ao lado para gerar." />
+            ) : (
+              <table className="w-full text-left">
+                <thead className="sr-only lg:not-sr-only">
+                  <tr>
+                    <Th>Período</Th>
+                    <Th>Receita</Th>
+                    <Th>Custo</Th>
+                    <Th>Lucro</Th>
+                    <Th>Gerada em</Th>
+                    <Th className="sr-only">Ações</Th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/70">
+                  {analises.map((a) => (
+                    <tr key={a.id} className="transition-colors hover:bg-white/[0.02]">
+                      <Td className="font-semibold text-white">
+                        {formatDate(a.periodoInicio)} — {formatDate(a.periodoFim)}
+                      </Td>
+                      <Td className="tabular-nums text-muted">{formatBRL(a.receitaTotal)}</Td>
+                      <Td className="tabular-nums text-muted">{formatBRL(a.custoTotal)}</Td>
+                      <Td className={`tabular-nums font-semibold ${Number(a.lucroTotal) >= 0 ? "text-success" : "text-danger"}`}>
+                        {formatBRL(a.lucroTotal)}
+                      </Td>
+                      <Td className="text-muted">{formatDateTime(a.criadoEm)}</Td>
+                      <Td className="text-right">
+                        <Button variant="danger" onClick={() => handleDelete(a.id)}>
+                          Excluir
+                        </Button>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );
