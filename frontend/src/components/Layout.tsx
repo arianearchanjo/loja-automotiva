@@ -51,26 +51,9 @@ const navItems = [
 function Brand() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-glow">
-        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-white">
-          <path
-            d="M4 11.5h16l-1.5 3a2 2 0 0 1-1.7 1H7.2a2 2 0 0 1-1.7-1l-1.5-3Z"
-            fill="currentColor"
-            opacity="0.95"
-          />
-          <path
-            d="M3 11.5 5 6.5a2 2 0 0 1 1.8-1.2h10.4A2 2 0 0 1 19 6.5l2 5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-          <circle cx="8" cy="17.5" r="1.6" fill="currentColor" />
-          <circle cx="16" cy="17.5" r="1.6" fill="currentColor" />
-        </svg>
-      </div>
+      <img src="/logo.png" alt="Loja Automotiva" className="h-10 w-10" />
       <div>
-        <p className="text-sm font-bold leading-tight text-white">Loja Automotiva</p>
+        <p className="text-sm font-bold leading-tight text-primary">Loja Automotiva</p>
         <p className="text-[11px] text-muted">Gestão Comercial</p>
       </div>
     </div>
@@ -97,7 +80,7 @@ export default function Layout({ children }: { children?: ReactNode }) {
       </div>
 
       <nav className="mt-2 flex-1 space-y-1 px-3">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted/60">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted">
           Menu
         </p>
         {navItems.map((item) => (
@@ -107,16 +90,20 @@ export default function Layout({ children }: { children?: ReactNode }) {
             end={item.end}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+              `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-gradient-to-r from-primary/25 to-accent/10 text-white shadow-glow"
-                  : "text-muted hover:bg-white/5 hover:text-white"
+                  ? "bg-primary text-background"
+                  : "text-muted hover:bg-white/[0.03] hover:text-primary"
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <span className={isActive ? "text-primary" : "text-muted group-hover:text-white"}>
+                <span
+                  className={
+                    isActive ? "text-background" : "text-muted group-hover:text-primary"
+                  }
+                >
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -126,13 +113,13 @@ export default function Layout({ children }: { children?: ReactNode }) {
         ))}
       </nav>
 
-      <div className="border-t border-border/70 p-4">
-        <div className="flex items-center gap-3 rounded-xl bg-surface-strong/60 p-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-primary text-xs font-bold text-white">
+      <div className="border-t border-border p-4">
+        <div className="flex items-center gap-3 rounded-xl bg-surface-strong px-3 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">
             {user?.name?.charAt(0).toUpperCase() ?? "U"}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
+            <p className="truncate text-sm font-semibold text-primary">{user?.name}</p>
             <p className="truncate text-xs text-muted">{user?.email}</p>
           </div>
           <button
@@ -151,22 +138,20 @@ export default function Layout({ children }: { children?: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border/70 bg-surface/60 lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-background lg:block">
         {sidebar}
       </aside>
 
-      {/* Drawer mobile */}
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-72 bg-surface shadow-2xl animate-fade-in">
+          <aside className="absolute inset-y-0 left-0 w-72 bg-background shadow-2xl animate-fade-in">
             <button
               onClick={() => setOpen(false)}
-              className="absolute right-3 top-3 rounded-lg border border-border p-2 text-muted hover:text-white"
+              className="absolute right-3 top-3 rounded-lg border border-border p-2 text-muted hover:text-primary"
               title="Fechar menu"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
@@ -179,11 +164,11 @@ export default function Layout({ children }: { children?: ReactNode }) {
       )}
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-border/70 bg-background/80 backdrop-blur-md">
+        <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-4 sm:px-8">
             <button
               onClick={() => setOpen(true)}
-              className="rounded-lg border border-border p-2 text-muted hover:text-white lg:hidden"
+              className="rounded-lg border border-border p-2 text-muted hover:text-primary lg:hidden"
               title="Abrir menu"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -196,7 +181,7 @@ export default function Layout({ children }: { children?: ReactNode }) {
             </div>
 
             <div className="ml-auto hidden text-right sm:block">
-              <p className="text-sm font-semibold text-white">{user?.name}</p>
+              <p className="text-sm font-semibold text-primary">{user?.name}</p>
               <p className="text-xs text-muted">Bem-vindo de volta</p>
             </div>
           </div>

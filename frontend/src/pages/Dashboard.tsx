@@ -106,10 +106,10 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Stat label="Receita total" value={formatBRL(kpis.receita)} delta={`${vendas.length} venda(s) registrada(s)`} tone="primary" icon={<IconMoney />} />
-            <Stat label="Custo total" value={formatBRL(kpis.custo)} tone="warning" icon={<IconTrend />} />
-            <Stat label="Lucro bruto" value={formatBRL(kpis.lucro)} tone="success" icon={<IconTrend />} />
-            <Stat label="Margem média" value={formatPercent(kpis.margem)} delta={`${calculos.length} cálculo(s) salvos`} tone="accent" icon={<IconCalc />} />
+            <Stat label="Receita total" value={formatBRL(kpis.receita)} delta={`${vendas.length} venda(s) registrada(s)`} icon={<IconMoney />} />
+            <Stat label="Custo total" value={formatBRL(kpis.custo)} icon={<IconTrend />} />
+            <Stat label="Lucro bruto" value={formatBRL(kpis.lucro)} icon={<IconTrend />} />
+            <Stat label="Margem média" value={formatPercent(kpis.margem)} delta={`${calculos.length} cálculo(s) salvos`} icon={<IconCalc />} />
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
@@ -120,7 +120,7 @@ export default function Dashboard() {
                   <div key={m.label} className="group flex flex-1 flex-col items-center gap-2">
                     <div className="flex w-full flex-1 items-end">
                       <div
-                        className="w-full rounded-t-lg bg-gradient-to-t from-primary to-accent transition-all group-hover:brightness-125"
+                        className="w-full rounded-t-lg bg-primary transition-all group-hover:opacity-80"
                         style={{ height: `${Math.max((m.lucro / maxLucro) * 100, 2)}%` }}
                       />
                     </div>
@@ -174,7 +174,7 @@ export default function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-border/70">
                     {recentCalculos.map((c) => (
-                      <tr key={c.id} className="transition-colors hover:bg-white/[0.02]">
+                      <tr key={c.id} className="transition-colors hover:bg-black/5">
                         <Td className="font-medium text-white">{c.nome}</Td>
                         <Td>
                           <Badge tone={c.tipo === "direto" ? "accent" : "primary"}>{c.tipo}</Badge>

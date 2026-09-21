@@ -6,8 +6,8 @@ export function ProtectedRoute() {
 
   if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <p className="text-sm text-slate-500">Carregando...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-sm text-muted">Carregando...</p>
       </div>
     );
   }

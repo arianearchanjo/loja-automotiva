@@ -178,7 +178,7 @@ export default function Calculos() {
                 </thead>
                 <tbody className="divide-y divide-border/70">
                   {calculos.map((c) => (
-                    <tr key={c.id} className="transition-colors hover:bg-white/[0.02]">
+                    <tr key={c.id} className="transition-colors hover:bg-black/5">
                       <Td className="max-w-[220px] truncate font-semibold text-white">{c.nome}</Td>
                       <Td>
                         <Badge tone={c.tipo === "direto" ? "accent" : "primary"}>{c.tipo}</Badge>

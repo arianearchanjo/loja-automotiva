@@ -114,7 +114,7 @@ export default function Analises() {
                 </thead>
                 <tbody className="divide-y divide-border/70">
                   {analises.map((a) => (
-                    <tr key={a.id} className="transition-colors hover:bg-white/[0.02]">
+                    <tr key={a.id} className="transition-colors hover:bg-black/5">
                       <Td className="font-semibold text-white">
                         {formatDate(a.periodoInicio)} — {formatDate(a.periodoFim)}
                       </Td>

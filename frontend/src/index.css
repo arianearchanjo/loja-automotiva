@@ -3,28 +3,28 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  --color-background: #060a15;
-  --color-surface: #0c1222;
-  --color-surface-strong: #131c33;
-  --color-border: #1e2a47;
-  --color-muted: #8b99b6;
-  --color-primary: #6d5cff;
-  --color-primary-strong: #5546f5;
-  --color-accent: #22d3ee;
-  --color-success: #34d399;
-  --color-danger: #fb7185;
-  --color-warning: #fbbf24;
+  --color-background: #000000;
+  --color-surface: #ffffff;
+  --color-surface-strong: #f5f5f5;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-muted: #888888;
+  --color-primary: #000000;
+  --color-primary-strong: #000000;
+  --color-accent: #000000;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
 
-  --shadow-card: 0 14px 34px -18px rgba(0, 0, 0, 0.55), 0 4px 12px -8px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 0 1px rgba(109, 92, 255, 0.25), 0 10px 40px -12px rgba(109, 92, 255, 0.35);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 
-  --animate-fade-up: fade-up 0.4s ease both;
-  --animate-fade-in: fade-in 0.3s ease both;
+  --animate-fade-up: fade-up 0.3s ease both;
+  --animate-fade-in: fade-in 0.2s ease both;
 
   @keyframes fade-up {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -48,14 +48,14 @@ html {
 
 body {
   background-color: var(--color-background);
-  color: #e2e8f0;
+  color: #e5e5e5;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -63,22 +63,21 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #24304f;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  border: 2px solid var(--color-background);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #314060;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 input,
 select,
 button,
 textarea {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
+  filter: invert(0.2);
 }

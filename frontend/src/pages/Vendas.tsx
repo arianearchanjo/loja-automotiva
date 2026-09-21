@@ -157,7 +157,7 @@ export default function Vendas() {
                   </thead>
                   <tbody className="divide-y divide-border/70">
                     {vendas.map((v) => (
-                      <tr key={v.id} className="transition-colors hover:bg-white/[0.02]">
+                      <tr key={v.id} className="transition-colors hover:bg-black/5">
                         <Td className="font-semibold text-white">{formatDate(v.dataVenda)}</Td>
                         <Td className="tabular-nums text-muted">{formatBRL(v.receita)}</Td>
                         <Td className="tabular-nums text-muted">{formatBRL(v.custoTotal)}</Td>
