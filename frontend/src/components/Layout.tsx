@@ -41,19 +41,32 @@ function IconAnalises() {
   );
 }
 
+function IconRelatorios() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="14 2 14 8 20 8" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="16" y1="13" x2="8" y2="13" strokeLinecap="round" />
+      <line x1="16" y1="17" x2="8" y2="17" strokeLinecap="round" />
+      <polyline points="10 9 9 9 8 9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const navItems = [
   { to: "/", label: "Dashboard", end: true, icon: <IconDashboard /> },
   { to: "/calculos", label: "Cálculos de Preço", end: false, icon: <IconCalculo /> },
   { to: "/vendas", label: "Vendas", end: false, icon: <IconVendas /> },
   { to: "/analises", label: "Análises", end: false, icon: <IconAnalises /> },
+  { to: "/relatorios", label: "Relatórios", end: false, icon: <IconRelatorios /> },
 ];
 
 function Brand() {
   return (
     <div className="flex items-center gap-3">
-      <img src="/logo.png" alt="Loja Automotiva" className="h-10 w-10" />
+      <img src="/logo.png" alt="Fagom Shop" className="h-10 w-10" />
       <div>
-        <p className="text-sm font-bold leading-tight text-primary">Loja Automotiva</p>
+        <p className="text-sm font-bold leading-tight text-primary">Fagom Shop</p>
         <p className="text-[11px] text-muted">Gestão Comercial</p>
       </div>
     </div>

@@ -3,6 +3,18 @@ import { calculosApi, vendasApi, type Calculo, type Venda } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Badge, Card, CardHeader, EmptyState, PageHeader, Stat, Td, Th } from "../components/ui";
 import { formatBRL, formatDate, formatDateTime, formatPercent } from "../lib/format";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
 function IconMoney() {
   return (
@@ -114,22 +126,40 @@ export default function Dashboard() {
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
             <Card className="p-5 lg:col-span-3">
-              <CardHeader title="Lucro mensal" subtitle="Últimos 6 meses de vendas" />
-              <div className="mt-6 flex h-48 items-end gap-3 px-2">
-                {monthly.map((m) => (
-                  <div key={m.label} className="group flex flex-1 flex-col items-center gap-2">
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t-lg bg-primary transition-all group-hover:opacity-80"
-                        style={{ height: `${Math.max((m.lucro / maxLucro) * 100, 2)}%` }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-medium capitalize text-muted">{m.label}</span>
-                    <span className="text-[10px] tabular-nums text-muted/70">
-                      {m.lucro > 0 ? formatBRL(m.lucro) : "—"}
-                    </span>
-                  </div>
-                ))}
+              <CardHeader title="Evolução mensal" subtitle="Receita, custo e lucro dos últimos 6 meses" />
+              <div className="mt-6 h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthly}>
+                    <defs>
+                      <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#a0a7b0" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#a0a7b0" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="label" stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#23262b",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "12px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                      }}
+                      labelStyle={{ color: "#d9dce0", fontWeight: 600 }}
+                      itemStyle={{ fontSize: "13px" }}
+                      formatter={(value: number) => [formatBRL(value)]}
+                    />
+                    <Legend />
+                    <Area type="monotone" dataKey="receita" name="Receita" stroke="#a0a7b0" fill="url(#colorReceita)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="custo" name="Custo" stroke="#8b919a" fill="rgba(139,145,154,0.1)" strokeWidth={2} strokeDasharray="5 5" />
+                    <Area type="monotone" dataKey="lucro" name="Lucro" stroke="#22c55e" fill="url(#colorLucro)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </Card>
 

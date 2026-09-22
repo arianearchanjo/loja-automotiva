@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "../components/ui";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -40,58 +41,56 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md animate-fade-up">
-        <div className="mb-10 flex flex-col items-center">
-          <img src="/logo.png" alt="Loja Automotiva" className="h-40 w-40" />
+        <div className="mb-10 flex flex-col items-center text-center">
+          <img src="/logo.png" alt="Fagom Shop" className="h-20 w-20 mx-auto" />
+          <h1 className="mt-4 text-2xl font-bold text-primary">Fagom Shop</h1>
+          <p className="mt-1 text-sm text-muted">Gestão Comercial</p>
         </div>
 
-        <div className="rounded-3xl border border-border bg-surface p-8 shadow-card">
+        <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+              <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger animate-fade-in">
                 {error}
               </div>
             )}
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
-                E-mail
-              </span>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-muted">E-mail</label>
               <input
                 type="email"
                 required
                 autoFocus
                 autoComplete="email"
                 placeholder="voce@loja.com"
-                className="w-full rounded-xl border border-border bg-surface-strong px-3.5 py-2.5 text-sm text-primary placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+                className="w-full rounded-xl border border-border bg-surface-strong px-4 py-3 text-sm text-primary placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-colors"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-            </label>
+            </div>
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted">
-                Senha
-              </span>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-muted">Senha</label>
               <input
                 type="password"
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-border bg-surface-strong px-3.5 py-2.5 text-sm text-primary placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+                className="w-full rounded-xl border border-border bg-surface-strong px-4 py-3 text-sm text-primary placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-colors"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
+            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl border border-border bg-primary px-4 py-3 text-base font-semibold text-surface transition-all hover:translate-y-px hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-            >
+            <Button type="submit" className="w-full py-3 text-base" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
-            </button>
+            </Button>
           </form>
-        </div>
+
+          <p className="mt-6 text-center text-xs text-muted">
+            Credenciais padrão: admin@loja.com / Admin@2026!segura
+          </p>
+        </Card>
       </div>
     </div>
   );
