@@ -86,10 +86,6 @@ export default function Login() {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
-
-          <p className="mt-6 text-center text-xs text-muted">
-            Credenciais padrão: admin@loja.com / Admin@2026!segura
-          </p>
         </Card>
       </div>
     </div>
