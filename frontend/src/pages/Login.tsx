@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui";
+import { Button, Card } from "../components/ui";
 
 export default function Login() {
   const [email, setEmail] = useState("");

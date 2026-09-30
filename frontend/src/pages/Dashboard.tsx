@@ -4,8 +4,6 @@ import { useAuth } from "../lib/auth";
 import { Badge, Card, CardHeader, EmptyState, PageHeader, Stat, Td, Th } from "../components/ui";
 import { formatBRL, formatDate, formatDateTime, formatPercent } from "../lib/format";
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,
@@ -96,7 +94,6 @@ export default function Dashboard() {
     }));
   }, [vendas]);
 
-  const maxLucro = Math.max(...monthly.map((m) => m.lucro), 0) || 1;
   const recentVendas = [...vendas].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 5);
   const recentCalculos = [...calculos].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 5);
 
@@ -152,7 +149,7 @@ export default function Dashboard() {
                       }}
                       labelStyle={{ color: "#d9dce0", fontWeight: 600 }}
                       itemStyle={{ fontSize: "13px" }}
-                      formatter={(value: number) => [formatBRL(value)]}
+                      formatter={(value) => [formatBRL(Number(value))]}
                     />
                     <Legend />
                     <Area type="monotone" dataKey="receita" name="Receita" stroke="#a0a7b0" fill="url(#colorReceita)" strokeWidth={2} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { vendasApi, type Venda, type Analise } from "../lib/api";
+import { vendasApi, type Venda } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Badge, Card, CardHeader, EmptyState, PageHeader, Select, Td, Th, Button, Stat } from "../components/ui";
 import { formatBRL, formatDate, formatPercent } from "../lib/format";
@@ -165,7 +165,7 @@ export default function Relatorios() {
     link.click();
   };
 
-  const tooltipFormatter = (value: number) => [formatBRL(value)];
+  const tooltipFormatter = (value: unknown) => [formatBRL(Number(value))];
 
   return (
     <div className="animate-fade-up">
@@ -249,7 +249,10 @@ export default function Relatorios() {
                       outerRadius={100}
                       dataKey="lucro"
                       nameKey="mes"
-                      label={({ mes, lucro }) => `${mes}: ${formatBRL(lucro)}`}
+                      label={(props: unknown) => {
+                        const { mes, lucro } = props as { mes?: string; lucro?: number };
+                        return `${mes ?? ""}: ${formatBRL(Number(lucro))}`;
+                      }}
                       labelLine={false}
                     >
                       {profitByCategory.map((_, index) => (

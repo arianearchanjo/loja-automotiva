@@ -66,27 +66,29 @@ export default function Calculos() {
     load();
   }, []);
 
-  const calculateResult = () => {
-    const pv = Number(form.precoVenda) || 0;
-    const cc = Number(form.custoCompra) || 0;
-    const frete = Number(form.frete) || 0;
-    const taxa = Number(form.taxaPlataforma) || 0;
-    const margem = Number(form.margemDesejada) || 0;
+  const calculateResult = (current: typeof emptyForm) => {
+    const pv = Number(current.precoVenda) || 0;
+    const cc = Number(current.custoCompra) || 0;
+    const frete = Number(current.frete) || 0;
+    const taxa = Number(current.taxaPlataforma) || 0;
+    const margem = Number(current.margemDesejada) || 0;
 
-    if (form.tipo === "direto" && pv > 0) {
-      const resultado = pv - cc - frete - taxa - margem;
-      setForm({ ...form, resultado: String(resultado.toFixed(2)) });
-      setShowResult(true);
-    } else if (form.tipo === "reverso" && margem > 0) {
-      const resultado = pv - frete - taxa - margem;
-      setForm({ ...form, custoCompra: String(resultado.toFixed(2)), resultado: String(resultado.toFixed(2)) });
-      setShowResult(true);
+    if (current.tipo === "direto" && pv > 0) {
+      return String((pv - cc - frete - taxa - margem).toFixed(2));
     }
+
+    if (current.tipo === "reverso" && pv > 0 && margem > 0) {
+      return String((pv - frete - taxa - margem).toFixed(2));
+    }
+
+    return null;
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    setShowResult(false);
+    const next = { ...form, [field]: value };
+    const resultado = calculateResult(next);
+    setForm({ ...next, resultado: resultado ?? "" });
+    setShowResult(resultado !== null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +131,7 @@ export default function Calculos() {
       <PageHeader
         title="Cálculos de Preço"
         subtitle="Calcule o preço de venda (direto) ou descubra o quanto pode gastar (reverso)."
-        action={<Stat label="Total" value={calculos.length} icon={<IconCalculator />} />}
+        action={<Stat label="Total" value={String(calculos.length)} icon={<IconCalculator />} />}
       />
 
       {error && (
@@ -161,10 +163,7 @@ export default function Calculos() {
             <Select
               label="Tipo de cálculo"
               value={form.tipo}
-              onChange={(e) => {
-                handleInputChange("tipo", e.target.value);
-                setShowResult(false);
-              }}
+              onChange={(e) => handleInputChange("tipo", e.target.value)}
             >
               <option value="direto">Direto — Preço de Venda → Margem</option>
               <option value="reverso">Reverso — Margem → Preço máximo</option>
@@ -333,7 +332,7 @@ export default function Calculos() {
                       <Td className="tabular-nums font-medium text-primary">{formatBRL(c.margemDesejada)}</Td>
                       <Td className="text-muted">{formatDateTime(c.criadoEm)}</Td>
                       <Td className="text-right">
-                        <Button variant="danger" size="sm" onClick={() => handleDelete(c.id)}>
+                        <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => handleDelete(c.id)}>
                           Excluir
                         </Button>
                       </Td>
