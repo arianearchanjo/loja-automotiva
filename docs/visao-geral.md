@@ -3,7 +3,7 @@
 > Parte da documentação do Sistema de Gestão Comercial e Financeira.
 > Veja também: [Requisitos](./requisitos.md), [Regras de Negócio](./regras-de-negocio.md),
 > [Modelo de Dados (MER)](./modelo-de-dados-mer.md), [Arquitetura](./arquitetura.md),
-> [Roadmap](./roadmap.md).
+> [Rastreabilidade](./rastreabilidade.md), 
 
 ## 1. Visão Geral
 
@@ -14,6 +14,8 @@ central é substituir esse controle manual por uma aplicação web capaz de:
 - Calcular o **preço de venda** de produtos a partir de custos, frete e taxas;
 - Executar o **cálculo reverso**: a partir do preço de venda desejado, determinar quanto
   pode ser gasto com compra, frete, taxas de plataforma e demais despesas;
+- Calcular a **venda ideal**: a partir do custo e da margem desejada, determinar o melhor
+  preço de venda possível;
 - Comparar **custo × venda** e acompanhar receitas, custos e lucro;
 - Manter **histórico** de cálculos e análises, com possibilidade de exclusão e geração de
   relatórios;
@@ -21,6 +23,10 @@ central é substituir esse controle manual por uma aplicação web capaz de:
 
 O sistema é de **usuário único** (single-tenant por conta), que desempenha todos os papéis
 do processo comercial — do planejamento de compra ao pós-venda.
+
+Em todos os modos, **os percentuais incidem sobre o preço de venda**, nunca sobre o custo de
+compra. Essa foi a decisão de regra que unificou os três modos de cálculo; as fórmulas
+estão em [Motor de Precificação](./motor-de-precificacao.md).
 
 ### 1.1 Objetivo do documento
 
@@ -46,3 +52,14 @@ fora do MVP (podendo compor versões futuras):
 | **Usuário (Vendedor/Gestor)** | Ator único do sistema. Realiza login, cadastra cálculos e análises, consulta histórico, gera relatórios e configura o sistema. |
 | **Sistema** | Executa validações, cálculos automáticos e geração de relatórios. |
 | **Equipe de desenvolvimento** | Mantém o sistema, disponibiliza notas/contato via tela de configurações. |
+
+## 3. Onde o sistema está hoje
+
+O MVP está entregue: autenticação com bloqueio por tentativas, dashboard, cálculo de preço
+nos três modos com prévia em tempo real, histórico de cálculos, registro de vendas, análises
+por período e relatório de performance com exportação em CSV e JSON.
+
+O que ainda não existe: configurações do sistema (e, com elas, a personalização do
+dashboard), relatório de um cálculo individual, exportação em PDF/XLSX, contato do
+desenvolvedor e tempo de uso. O panorama completo, item a item, está em
+

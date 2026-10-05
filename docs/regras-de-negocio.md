@@ -3,96 +3,90 @@
 > Parte da documentação do Sistema de Gestão Comercial e Financeira.
 > Veja também: [Visão Geral](./visao-geral.md), [Requisitos](./requisitos.md),
 > [Modelo de Dados (MER)](./modelo-de-dados-mer.md), [Arquitetura](./arquitetura.md),
-> [Roadmap](./roadmap.md).
+> [Rastreabilidade](./rastreabilidade.md), [Motor de Precificação](./motor-de-precificacao.md).
 
-Regras de negócio organizadas por módulo, preservando a numeração original do levantamento.
+Regras de negócio do sistema, organizadas por módulo e numeradas sequencialmente de
+**RN01** a **RN49**. O detalhamento das fórmulas de cálculo está em
+[Motor de Precificação](./motor-de-precificacao.md); o vínculo entre requisito e regra está
+em [Rastreabilidade](./rastreabilidade.md).
 
-## 5.1 Menu inicial e acesso
+## RN01–RN06 — Acesso e autenticação
 
 | ID | Regra |
 |---|---|
 | RN01 | O acesso ao sistema exige login e senha válidos. |
-| RN02 | Após três tentativas inválidas, o login é bloqueado temporariamente. |
+| RN02 | Após três tentativas inválidas, o login é bloqueado temporariamente por 15 minutos. |
 | RN03 | Somente usuários autenticados acessam as funções do sistema. |
 | RN04 | O logout encerra a sessão e retorna à tela de login. |
-| RN05 | A sessão é encerrada após um período sem atividade. |
+| RN05 | A sessão expira após 7 dias e é renovada a cada 24 horas de atividade. |
 | RN06 | Cada usuário visualiza somente os próprios dados. |
-| RN07 | Personalizações válidas do dashboard são salvas. |
-| RN08 | Elementos essenciais do dashboard não podem ser removidos. |
 
-## 5.2 Gestão de vendas e cálculos
+## RN07–RN21 — Gestão de vendas e cálculos
 
 | ID | Regra |
 |---|---|
-| RN09 | Todos os campos obrigatórios devem ser preenchidos. |
-| RN10 | Campos numéricos aceitam somente números válidos. |
-| RN11 | O sistema aceita e padroniza vírgula ou ponto decimal. |
-| RN12 | Operações inválidas, como divisão por zero, são impedidas. |
-| RN13 | Valores negativos são aceitos somente quando permitidos pelo contexto. |
-| RN14 | Os valores são validados antes do cálculo. |
-| RN15 | Cada cálculo possui identificação, valores, resultado, data e hora. |
-| RN16 | O nome do cálculo respeita um limite de caracteres. |
-| RN17 | O sistema informa o sucesso ou a falha do salvamento. |
-| RN18 | O sistema impede salvamento duplicado por cliques repetidos. |
-| RN19 | O histórico mostra somente os cálculos do usuário autenticado. |
-| RN20 | O sistema informa quando o histórico está vazio. |
-| RN21 | A exclusão exige confirmação e é permanente. |
-| RN22 | Cancelar ou fechar a confirmação não exclui o cálculo. |
-| RN23 | Após a exclusão, o histórico é atualizado. |
-| RN24 | Cálculos vinculados a análises não podem ser excluídos. |
-| RN25 | Somente cálculos válidos podem gerar relatórios. |
-| RN26 | O relatório mostra valores, resultado, usuário, data e hora. |
-| RN27 | Falhas no relatório não alteram o cálculo original. |
+| RN07 | Todos os campos obrigatórios devem ser preenchidos. |
+| RN08 | Campos numéricos aceitam somente números válidos. |
+| RN09 | O sistema aceita e padroniza vírgula ou ponto decimal. |
+| RN10 | Operações inválidas, como divisão por zero, são impedidas. |
+| RN11 | Valores negativos são aceitos somente quando permitidos pelo contexto. |
+| RN12 | Os valores são validados antes do cálculo. |
+| RN13 | Cada cálculo possui identificação, valores, resultado, data e hora. |
+| RN14 | O nome do cálculo respeita um limite de 80 caracteres. |
+| RN15 | O sistema informa o sucesso ou a falha do salvamento. |
+| RN16 | O sistema impede salvamento duplicado por cliques repetidos. |
+| RN17 | O histórico mostra somente os cálculos do usuário autenticado. |
+| RN18 | O sistema informa quando o histórico está vazio. |
+| RN19 | A exclusão exige confirmação e é permanente. |
+| RN20 | Cancelar ou fechar a confirmação não exclui o cálculo. |
+| RN21 | Após a exclusão, o histórico é atualizado. |
 
-## 5.3 Gestão financeira
+## RN22–RN32 — Gestão financeira
 
 | ID | Regra |
 |---|---|
-| RN28 | Os dados financeiros obrigatórios devem ser preenchidos. |
-| RN29 | Valores financeiros são exibidos no formato monetário. |
-| RN30 | A data final não pode ser anterior à data inicial. |
-| RN31 | Toda análise deve indicar o período considerado. |
-| RN32 | Resultados possíveis são calculados automaticamente. |
-| RN33 | O sistema diferencia dados informados de dados calculados. |
-| RN34 | Somente análises válidas podem ser salvas. |
-| RN35 | Cada análise possui identificação, período, data e resultados. |
-| RN36 | Alterações nos dados exigem o recálculo da análise. |
-| RN37 | Cada usuário visualiza somente suas próprias análises. |
-| RN38 | Valores monetários são exibidos com duas casas decimais. |
-| RN39 | A exclusão de uma análise exige confirmação. |
-| RN40 | Excluir uma análise não exclui os dados de vendas associados. |
-| RN41 | O relatório financeiro exibe dados, período e resultados. |
-| RN42 | Análises incompletas não podem gerar relatórios. |
-| RN43 | O relatório informa que os resultados dependem dos dados inseridos. |
+| RN22 | Os dados financeiros obrigatórios devem ser preenchidos. |
+| RN23 | Valores financeiros são exibidos no formato monetário. |
+| RN24 | Toda análise deve indicar o período considerado. |
+| RN25 | Resultados possíveis são calculados automaticamente. |
+| RN26 | O sistema diferencia dados informados de dados calculados. |
+| RN27 | Somente análises válidas podem ser salvas. |
+| RN28 | Cada análise possui identificação, período, data e resultados. |
+| RN29 | Cada usuário visualiza somente as próprias análises. |
+| RN30 | Valores monetários são exibidos com duas casas decimais. |
+| RN31 | A exclusão de uma análise exige confirmação. |
+| RN32 | Excluir uma análise não exclui os dados de vendas associados. |
 
-## 5.4 Configurações e informações gerais
+## RN33–RN42 — Proteção geral e integridade dos dados
 
 | ID | Regra |
 |---|---|
-| RN44 | O usuário altera somente configurações permitidas. |
-| RN45 | Alterações importantes exigem confirmação. |
-| RN46 | O usuário pode restaurar as configurações originais. |
-| RN47 | Configurações inválidas são substituídas pelas configurações padrão. |
-| RN48 | As notas do desenvolvedor são apenas para consulta. |
-| RN49 | Somente contatos autorizados do desenvolvedor são exibidos. |
-| RN50 | O tempo de uso é contado entre login e logout. |
-| RN51 | O sistema diferencia o tempo atual do tempo total de uso. |
-| RN52 | Períodos prolongados sem atividade não são contabilizados no tempo de uso. |
-| RN53 | A versão do sistema não pode ser alterada pelo usuário. |
-| RN54 | A versão segue um padrão de numeração semântica (ex.: 1.0.0). |
+| RN33 | Botões de exclusão têm destaque visual. |
+| RN34 | Nenhum registro é excluído sem confirmação. |
+| RN35 | Falhas no sistema não devem apagar dados já salvos. |
+| RN36 | Envios repetidos do mesmo formulário são impedidos. |
+| RN37 | Campos obrigatórios e seus erros são identificados visualmente. |
+| RN38 | Mensagens de erro não exibem informações internas do sistema. |
+| RN39 | Operações importantes são registradas com usuário e data. |
+| RN40 | Um registro é considerado salvo somente após a confirmação. |
+| RN41 | Falhas de conexão não apagam dados já armazenados. |
+| RN42 | Um usuário não pode acessar registros de outra conta. |
 
-## 5.5 Regras gerais de proteção
+## RN43–RN49 — Motor de precificação
+
+Regras do motor de cálculo, implementadas em
+[`backend/src/lib/precificacao.ts`](../backend/src/lib/precificacao.ts) e cobertas por testes
+unitários em [`precificacao.test.ts`](../backend/src/lib/precificacao.test.ts).
 
 | ID | Regra |
 |---|---|
-| RN55 | Botões de exclusão têm destaque visual. |
-| RN56 | Nenhum registro é excluído sem confirmação. |
-| RN57 | Falhas no sistema não devem apagar dados já salvos. |
-| RN58 | O sistema avisa sobre alterações não salvas antes da saída. |
-| RN59 | Envios repetidos do mesmo formulário são impedidos. |
-| RN60 | Campos obrigatórios e seus erros são identificados visualmente. |
-| RN61 | Mensagens de erro não exibem informações internas do sistema. |
-| RN62 | Operações importantes são registradas com usuário e data. |
-| RN63 | Um registro é considerado salvo somente após a confirmação. |
-| RN64 | Falhas de conexão não apagam dados já armazenados. |
-| RN65 | Um usuário não pode acessar registros de outra conta. |
+| RN43 | Todo percentual — imposto, taxa da plataforma e margem — incide sobre o **preço de venda**, nunca sobre o custo de compra. |
+| RN44 | Campo numérico ausente ou nulo é tratado como zero. |
+| RN45 | O preço de venda da venda ideal é arredondado **para cima**, para nunca entregar menos margem que a pedida. |
+| RN46 | Imposto, taxa, lucro e margem são recalculados a partir do preço de venda final, para que os números exibidos fechem entre si. |
+| RN47 | O desconto da taxa da plataforma só se aplica quando a **meta de venda foi atingida**. |
+| RN48 | A taxa efetiva nunca é negativa: desconto maior que a taxa resulta em taxa efetiva zero. |
+| RN49 | Percentuais informados devem ficar entre 0 e 100. |
+
+> Detalhamento das fórmulas, dos erros de negócio e dos vetores de teste em
+> [Motor de Precificação](./motor-de-precificacao.md).
