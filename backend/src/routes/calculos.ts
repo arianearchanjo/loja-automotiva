@@ -14,6 +14,9 @@ const calculoSchema = z.object({
   custoCompra: z.coerce.number().optional(),
   frete: z.coerce.number().optional(),
   taxaPlataforma: z.coerce.number().optional(),
+  metaVendas: z.coerce.number().min(0).optional(),
+  vendasAcumuladas: z.coerce.number().min(0).optional(),
+  descontoPercentual: z.coerce.number().min(0).max(100).optional(),
   margemDesejada: z.coerce.number().optional(),
   resultado: z.coerce.number().optional(),
 });

@@ -99,20 +99,23 @@ enum FormatoRelatorio {
 }
 
 model CalculoPreco {
-  id              String       @id @default(cuid())
-  userId          String
-  user            Usuario       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nome            String
-  tipo            TipoCalculo
-  precoVenda      Decimal?     @db.Decimal(12, 4)
-  custoCompra     Decimal?     @db.Decimal(12, 4)
-  frete           Decimal?     @db.Decimal(12, 4)
-  taxaPlataforma  Decimal?     @db.Decimal(12, 4)
-  margemDesejada  Decimal?     @db.Decimal(12, 4)
-  resultado       Decimal?     @db.Decimal(12, 4)
-  analiseId       String?
-  analise         AnaliseFinanceira? @relation(fields: [analiseId], references: [id], onDelete: SetNull)
-  criadoEm        DateTime     @default(now())
+  id                 String       @id @default(cuid())
+  userId             String
+  user               Usuario       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome               String
+  tipo               TipoCalculo
+  precoVenda         Decimal?     @db.Decimal(12, 4)
+  custoCompra        Decimal?     @db.Decimal(12, 4)
+  frete              Decimal?     @db.Decimal(12, 4)
+  taxaPlataforma     Decimal?     @db.Decimal(12, 4)
+  metaVendas         Decimal?     @db.Decimal(12, 4)
+  vendasAcumuladas   Decimal?     @db.Decimal(12, 4)
+  descontoPercentual Decimal?     @db.Decimal(5, 2)
+  margemDesejada     Decimal?     @db.Decimal(12, 4)
+  resultado          Decimal?     @db.Decimal(12, 4)
+  analiseId          String?
+  analise            AnaliseFinanceira? @relation(fields: [analiseId], references: [id], onDelete: SetNull)
+  criadoEm           DateTime     @default(now())
 
   @@index([userId])
   @@map("calculo_preco")
