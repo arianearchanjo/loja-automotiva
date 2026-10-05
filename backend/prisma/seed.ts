@@ -1,5 +1,6 @@
 import { auth } from "../src/lib/auth.js";
 import { prisma } from "../src/lib/prisma.js";
+import { calcularPrecificacao } from "../src/lib/precificacao.js";
 import { env } from "../src/env.js";
 
 type VendaFake = {
@@ -28,66 +29,91 @@ const VENDAS_FAKE: VendaFake[] = [
   { daysBack: 2, receita: 2100, custo: 1330 },
 ];
 
-const CALCULOS_FAKE = [
+// Cobre os 3 tipos de cálculo, com e sem meta de venda/desconto da plataforma.
+// "precoVenda" e "custoCompra" ficam sem valor conforme o tipo pede; os campos
+// derivados são sempre calculados pelo motor de precificação.
+type CalculoFake = {
+  nome: string;
+  tipo: "direto" | "reverso" | "vendaIdeal";
+  precoVenda?: number;
+  custoCompra?: number;
+  frete: number;
+  taxaPlataformaPercentual: number;
+  impostoPercentual: number;
+  descontoPlataforma: number;
+  metaVendaAlcancada: boolean;
+  margemPercentual: number;
+};
+
+const CALCULOS_FAKE: CalculoFake[] = [
   {
     nome: "Kit pastilhas de freio dianteiro",
-    tipo: "direto" as const,
+    tipo: "direto",
     precoVenda: 420,
     custoCompra: 280,
     frete: 25,
-    taxaPlataforma: 12,
-    margemDesejada: 100,
-    resultado: 103,
+    taxaPlataformaPercentual: 12,
+    impostoPercentual: 8,
+    descontoPlataforma: 0,
+    metaVendaAlcancada: false,
+    margemPercentual: 15,
   },
   {
     nome: "Óleo de motor 5W30 (1L)",
-    tipo: "direto" as const,
+    tipo: "direto",
     precoVenda: 48,
     custoCompra: 29,
     frete: 8,
-    taxaPlataforma: 1.5,
-    margemDesejada: 10,
-    resultado: 9.5,
+    taxaPlataformaPercentual: 10,
+    impostoPercentual: 18,
+    descontoPlataforma: 20,
+    metaVendaAlcancada: true,
+    margemPercentual: 20,
   },
   {
     nome: "Bateria 60Ah — margem mínima",
-    tipo: "reverso" as const,
+    tipo: "reverso",
     precoVenda: 620,
-    custoCompra: undefined,
     frete: 35,
-    taxaPlataforma: 18,
-    margemDesejada: 120,
-    resultado: 447,
+    taxaPlataformaPercentual: 11,
+    impostoPercentual: 12,
+    descontoPlataforma: 0,
+    metaVendaAlcancada: false,
+    margemPercentual: 20,
   },
   {
     nome: "Amortecedor dianteiro (par)",
-    tipo: "direto" as const,
+    tipo: "direto",
     precoVenda: 1180,
     custoCompra: 760,
     frete: 55,
-    taxaPlataforma: 30,
-    margemDesejada: 300,
-    resultado: 335,
+    taxaPlataformaPercentual: 13,
+    impostoPercentual: 10,
+    descontoPlataforma: 25,
+    metaVendaAlcancada: true,
+    margemPercentual: 18,
   },
   {
     nome: "Correia dentada + tensor",
-    tipo: "reverso" as const,
+    tipo: "reverso",
     precoVenda: 890,
-    custoCompra: undefined,
     frete: 40,
-    taxaPlataforma: 25,
-    margemDesejada: 200,
-    resultado: 625,
+    taxaPlataformaPercentual: 12,
+    impostoPercentual: 15,
+    descontoPlataforma: 0,
+    metaVendaAlcancada: false,
+    margemPercentual: 22,
   },
   {
     nome: "Filtro de ar esportivo",
-    tipo: "direto" as const,
-    precoVenda: 190,
+    tipo: "vendaIdeal",
     custoCompra: 115,
     frete: 14,
-    taxaPlataforma: 5,
-    margemDesejada: 50,
-    resultado: 56,
+    taxaPlataformaPercentual: 10,
+    impostoPercentual: 10,
+    descontoPlataforma: 0,
+    metaVendaAlcancada: false,
+    margemPercentual: 5,
   },
 ];
 
@@ -142,21 +168,42 @@ async function seedVendas(userId: string) {
 
 async function seedCalculos(userId: string) {
   const calculos = await prisma.$transaction(
-    CALCULOS_FAKE.map((c) =>
-      prisma.calculoPreco.create({
+    CALCULOS_FAKE.map((c) => {
+      // Mesma fonte de verdade da API: os derivados nunca são digitados.
+      const saida = calcularPrecificacao({
+        tipo: c.tipo,
+        precoVenda: c.precoVenda ?? null,
+        custoCompra: c.custoCompra ?? null,
+        frete: c.frete,
+        taxaPlataformaPercentual: c.taxaPlataformaPercentual,
+        impostoPercentual: c.impostoPercentual,
+        descontoPlataforma: c.descontoPlataforma,
+        metaVendaAlcancada: c.metaVendaAlcancada,
+        margemPercentual: c.margemPercentual,
+      });
+
+      return prisma.calculoPreco.create({
         data: {
           nome: c.nome,
           tipo: c.tipo,
-          precoVenda: c.precoVenda,
-          custoCompra: c.custoCompra,
+          precoVenda: saida.precoVenda,
+          custoCompra: saida.custoCompra,
           frete: c.frete,
-          taxaPlataforma: c.taxaPlataforma,
-          margemDesejada: c.margemDesejada,
-          resultado: c.resultado,
+          taxaPlataformaPercentual: c.taxaPlataformaPercentual,
+          impostoPercentual: c.impostoPercentual,
+          descontoPlataforma: c.metaVendaAlcancada ? c.descontoPlataforma : null,
+          metaVendaAlcancada: c.metaVendaAlcancada,
+          margemPercentual: c.margemPercentual,
+          taxaEfetivaPercentual: saida.taxaEfetivaPercentual,
+          valorImposto: saida.valorImposto,
+          valorTaxa: saida.valorTaxa,
+          lucro: saida.lucro,
+          margemObtidaPercentual: saida.margemObtidaPercentual,
+          resultado: saida.resultado,
           userId,
         },
-      }),
-    ),
+      });
+    }),
   );
 
   console.log(`[seed] ${calculos.length} cálculos de demonstração criados.`);
@@ -214,14 +261,34 @@ async function main(): Promise<void> {
   const user = await seedUsuario();
 
   const existingVendas = await prisma.venda.count({ where: { userId: user.id } });
+  const existingCalculos = await prisma.calculoPreco.count({ where: { userId: user.id } });
+
+  // Cada bloco é semeado de forma independente: assim a demonstração não fica
+  // faltando quando só um dos conjuntos já existe.
+  let vendas: { id: string; dataVenda: Date; receita: bigint | number; custoTotal: bigint | number; lucroBruto: bigint | number }[] = [];
+
   if (existingVendas > 0) {
     console.log(`[seed] já existem ${existingVendas} venda(s) — dados fake não duplicados.`);
-    return;
+    vendas = await prisma.venda.findMany({
+      where: { userId: user.id },
+      select: { id: true, dataVenda: true, receita: true, custoTotal: true, lucroBruto: true },
+    });
+  } else {
+    vendas = await seedVendas(user.id);
   }
 
-  const vendas = await seedVendas(user.id);
-  await seedCalculos(user.id);
-  await seedAnalises(user.id, vendas);
+  if (existingCalculos > 0) {
+    console.log(`[seed] já existem ${existingCalculos} cálculo(s) — dados fake não duplicados.`);
+  } else {
+    await seedCalculos(user.id);
+  }
+
+  const existingAnalises = await prisma.analiseFinanceira.count({ where: { userId: user.id } });
+  if (existingAnalises > 0) {
+    console.log(`[seed] já existem ${existingAnalises} análise(s) — dados fake não duplicados.`);
+  } else {
+    await seedAnalises(user.id, vendas);
+  }
 
   console.log("[seed] dados de demonstração concluídos.");
 }
