@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { vendasApi, type Venda } from "../lib/api";
-import { Button, Card, CardHeader, EmptyState, Field, PageHeader, Td, Th } from "../components/ui";
+import { useCallback, useEffect, useState } from "react";
+import { vendasApi, type PaginacaoInfo, type Venda, type VendasResumo } from "../lib/api";
+import { Button, Card, CardHeader, EmptyState, Field, PageHeader, Paginacao, Td, Th } from "../components/ui";
 import { formatBRL, formatDate, formatDateTime } from "../lib/format";
 
 const emptyForm = {
@@ -9,26 +9,45 @@ const emptyForm = {
   dataVenda: new Date().toISOString().slice(0, 10),
 };
 
+const PAGINA_INICIAL = 1;
+const LIMITE_INICIAL = 20;
+
 export default function Vendas() {
   const [vendas, setVendas] = useState<Venda[]>([]);
+  const [resumo, setResumo] = useState<VendasResumo | null>(null);
+  const [pagina, setPagina] = useState(PAGINA_INICIAL);
+  const [limite, setLimite] = useState(LIMITE_INICIAL);
+  const [info, setInfo] = useState<PaginacaoInfo>({
+    pagina: PAGINA_INICIAL,
+    limite: LIMITE_INICIAL,
+    total: 0,
+    totalPaginas: 1,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState(emptyForm);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await vendasApi.list();
-      setVendas(data);
+      const [paginado, resumoTotal] = await Promise.all([
+        vendasApi.list({ pagina, limite }),
+        vendasApi.resumo(),
+      ]);
+      setVendas(paginado.dados);
+      setInfo(paginado.paginacao);
+      setResumo(resumoTotal);
+      setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar");
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagina, limite]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +60,9 @@ export default function Vendas() {
         dataVenda: new Date(form.dataVenda).toISOString(),
       });
       setForm(emptyForm);
-      load();
+      // Volta para a primeira página para exibir o registro recém-criado.
+      setPagina(PAGINA_INICIAL);
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar");
     }
@@ -51,15 +72,12 @@ export default function Vendas() {
     if (!confirm("Deseja realmente excluir esta venda?")) return;
     try {
       await vendasApi.delete(id);
-      setVendas((prev) => prev.filter((v) => v.id !== id));
+      if (vendas.length === 1 && pagina > 1) setPagina(pagina - 1);
+      else await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao excluir");
     }
   };
-
-  const totalReceita = vendas.reduce((acc, v) => acc + Number(v.receita), 0);
-  const totalCusto = vendas.reduce((acc, v) => acc + Number(v.custoTotal), 0);
-  const totalLucro = vendas.reduce((acc, v) => acc + Number(v.lucroBruto), 0);
 
   return (
     <div className="animate-fade-up">
@@ -124,20 +142,20 @@ export default function Vendas() {
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Card className="p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted">Receita</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-white">{formatBRL(totalReceita)}</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-white">{formatBRL(resumo?.receita ?? 0)}</p>
             </Card>
             <Card className="p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted">Custo total</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-warning">{formatBRL(totalCusto)}</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-warning">{formatBRL(resumo?.custo ?? 0)}</p>
             </Card>
             <Card className="p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted">Lucro bruto</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-success">{formatBRL(totalLucro)}</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-success">{formatBRL(resumo?.lucro ?? 0)}</p>
             </Card>
           </div>
 
           <Card className="overflow-hidden">
-            <CardHeader title="Histórico de vendas" subtitle={`${vendas.length} venda(s) registrada(s)`} />
+            <CardHeader title="Histórico de vendas" subtitle={`${info.total} venda(s) registrada(s)`} />
             <div className="mt-4 overflow-x-auto">
               {loading ? (
                 <p className="px-5 py-10 text-center text-muted">Carregando...</p>
@@ -176,6 +194,19 @@ export default function Vendas() {
                 </table>
               )}
             </div>
+
+            <Paginacao
+              pagina={info.pagina}
+              totalPaginas={info.totalPaginas}
+              total={info.total}
+              limite={info.limite}
+              carregando={loading}
+              onPagina={setPagina}
+              onLimite={(novo) => {
+                setLimite(novo);
+                setPagina(PAGINA_INICIAL);
+              }}
+            />
           </Card>
         </div>
       </div>

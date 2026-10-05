@@ -190,3 +190,90 @@ export function Th({ children, className = "" }: { children?: ReactNode; classNa
 export function Td({ children, className = "" }: { children?: ReactNode; className?: string }) {
   return <td className={`${tableWrap} ${className}`}>{children}</td>;
 }
+
+// Controles da listagem paginada: só busca a fatia pedida ao servidor.
+export function Paginacao({
+  pagina,
+  totalPaginas,
+  total,
+  limite,
+  carregando,
+  onPagina,
+  onLimite,
+}: {
+  pagina: number;
+  totalPaginas: number;
+  total: number;
+  limite: number;
+  carregando?: boolean;
+  onPagina: (pagina: number) => void;
+  onLimite?: (limite: number) => void;
+}) {
+  const primeiro = total === 0 ? 0 : (pagina - 1) * limite + 1;
+  const ultimo = Math.min(pagina * limite, total);
+
+  const irPara = (destino: number) => {
+    if (destino < 1 || destino > totalPaginas || destino === pagina) return;
+    onPagina(destino);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-5 py-3 text-sm">
+      <p className="text-muted">
+        {total === 0 ? (
+          "Nenhum registro"
+        ) : (
+          <>
+            <span className="tabular-nums">
+              {primeiro}–{ultimo}
+            </span>{" "}
+            de <span className="tabular-nums">{total}</span>
+          </>
+        )}
+      </p>
+
+      <div className="flex items-center gap-3">
+        {onLimite && (
+          <label className="flex items-center gap-2 text-xs text-muted">
+            Por página
+            <select
+              value={limite}
+              onChange={(e) => onLimite(Number(e.target.value))}
+              className="rounded-lg border border-border bg-surface-strong px-2 py-1 text-xs text-primary focus:border-primary focus:outline-none"
+            >
+              {[10, 20, 50, 100].map((opcao) => (
+                <option key={opcao} value={opcao}>
+                  {opcao}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => irPara(pagina - 1)}
+            disabled={carregando || pagina <= 1}
+            aria-label="Página anterior"
+            className="rounded-lg border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ‹
+          </button>
+          <span className="tabular-nums px-2 text-xs text-muted">
+            {pagina} / {totalPaginas}
+          </span>
+          <button
+            type="button"
+            onClick={() => irPara(pagina + 1)}
+            disabled={carregando || pagina >= totalPaginas}
+            aria-label="Próxima página"
+            className="rounded-lg border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

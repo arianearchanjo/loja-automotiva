@@ -1,7 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
-import { vendasApi, type Venda } from "../lib/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  vendasApi,
+  type FiltroPeriodo,
+  type PaginacaoInfo,
+  type Venda,
+  type VendasResumo,
+} from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { Badge, Card, CardHeader, EmptyState, PageHeader, Select, Td, Th, Button, Stat } from "../components/ui";
+import {
+  Badge,
+  Card,
+  CardHeader,
+  EmptyState,
+  PageHeader,
+  Select,
+  Paginacao,
+  Td,
+  Th,
+  Button,
+  Stat,
+} from "../components/ui";
 import { formatBRL, formatDate, formatPercent } from "../lib/format";
 import {
   BarChart,
@@ -20,6 +38,11 @@ import { format, subMonths, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const COLORS = ["#a0a7b0", "#8b919a", "#6b7280", "#4b5563", "#374151"];
+
+const PAGINA_INICIAL = 1;
+const LIMITE_INICIAL = 10;
+
+type Periodo = "mes" | "trimestre" | "semestre" | "ano";
 
 function IconDownload() {
   return (
@@ -48,121 +71,111 @@ function IconMoney() {
   );
 }
 
+// O período é enviado ao servidor, que filtra e agrega no banco. O fim do
+// período vai até 23:59:59 para não excluir vendas do próprio dia.
+const filtroDoPeriodo = (periodo: Periodo): FiltroPeriodo => {
+  const agora = new Date();
+  const meses = periodo === "mes" ? 1 : periodo === "trimestre" ? 3 : periodo === "semestre" ? 6 : 12;
+  const inicio = startOfMonth(subMonths(agora, meses - 1));
+  const fim = new Date(agora);
+  fim.setHours(23, 59, 59, 999);
+  return {
+    periodoInicio: inicio.toISOString(),
+    periodoFim: fim.toISOString(),
+  };
+};
+
 export default function Relatorios() {
   const { user } = useAuth();
+  const [periodo, setPeriodo] = useState<Periodo>("mes");
+  const [resumo, setResumo] = useState<VendasResumo | null>(null);
   const [vendas, setVendas] = useState<Venda[]>([]);
+  const [pagina, setPagina] = useState(PAGINA_INICIAL);
+  const [limite, setLimite] = useState(LIMITE_INICIAL);
+  const [info, setInfo] = useState<PaginacaoInfo>({
+    pagina: PAGINA_INICIAL,
+    limite: LIMITE_INICIAL,
+    total: 0,
+    totalPaginas: 1,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [periodo, setPeriodo] = useState<"mes" | "trimestre" | "semestre" | "ano">("mes");
+
+  const filtro = useMemo(() => filtroDoPeriodo(periodo), [periodo]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      // KPIs e séries vêm agregados do banco; a tabela pede só a página atual.
+      const [resumoTotal, paginaVendas] = await Promise.all([
+        vendasApi.resumo(filtro),
+        vendasApi.list({ ...filtro, pagina, limite }),
+      ]);
+      setResumo(resumoTotal);
+      setVendas(paginaVendas.dados);
+      setInfo(paginaVendas.paginacao);
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+    } finally {
+      setLoading(false);
+    }
+  }, [filtro, pagina, limite]);
 
   useEffect(() => {
-    vendasApi.list()
-      .then(setVendas)
-      .catch((err) => setError(err instanceof Error ? err.message : "Erro ao carregar dados"))
-      .finally(() => setLoading(false));
-  }, []);
+    load();
+  }, [load]);
 
-  const filteredVendas = useMemo(() => {
-    const now = new Date();
-    let startDate: Date;
+  const kpis = useMemo(
+    () => ({
+      receita: resumo?.receita ?? 0,
+      custo: resumo?.custo ?? 0,
+      lucro: resumo?.lucro ?? 0,
+      margem: resumo?.margem ?? 0,
+      ticketMedio: resumo?.ticketMedio ?? 0,
+      count: resumo?.quantidade ?? 0,
+    }),
+    [resumo],
+  );
 
-    switch (periodo) {
-      case "mes":
-        startDate = startOfMonth(now);
-        break;
-      case "trimestre":
-        startDate = startOfMonth(subMonths(now, 3));
-        break;
-      case "semestre":
-        startDate = startOfMonth(subMonths(now, 6));
-        break;
-      case "ano":
-        startDate = startOfMonth(subMonths(now, 12));
-        break;
-    }
-
-    return vendas.filter((v) => new Date(v.dataVenda) >= startDate);
-  }, [vendas, periodo]);
-
-  const kpis = useMemo(() => {
-    const receita = filteredVendas.reduce((acc, v) => acc + Number(v.receita), 0);
-    const custo = filteredVendas.reduce((acc, v) => acc + Number(v.custoTotal), 0);
-    const lucro = filteredVendas.reduce((acc, v) => acc + Number(v.lucroBruto), 0);
-    const margem = receita > 0 ? (lucro / receita) * 100 : 0;
-    const ticketMedio = filteredVendas.length > 0 ? receita / filteredVendas.length : 0;
-    return { receita, custo, lucro, margem, ticketMedio, count: filteredVendas.length };
-  }, [filteredVendas]);
-
+  // Preenche meses sem venda para o gráfico não virar uma linha solta.
   const monthlyData = useMemo(() => {
-    const now = new Date();
-    const months = periodo === "mes" ? 1 : periodo === "trimestre" ? 3 : periodo === "semestre" ? 6 : 12;
-    const map = new Map<string, { receita: number; custo: number; lucro: number; label: string }>();
-
-    for (let i = months - 1; i >= 0; i--) {
-      const d = startOfMonth(subMonths(now, i));
+    const meses = periodo === "mes" ? 1 : periodo === "trimestre" ? 3 : periodo === "semestre" ? 6 : 12;
+    const mapa = new Map<string, { receita: number; custo: number; lucro: number; label: string }>();
+    const agora = new Date();
+    for (let i = meses - 1; i >= 0; i--) {
+      const d = startOfMonth(subMonths(agora, i));
       const key = format(d, "yyyy-MM");
-      const label = format(d, "MMM/yy", { locale: ptBR });
-      map.set(key, { receita: 0, custo: 0, lucro: 0, label });
+      mapa.set(key, {
+        receita: 0,
+        custo: 0,
+        lucro: 0,
+        label: format(d, "MMM/yy", { locale: ptBR }),
+      });
     }
-
-    for (const v of filteredVendas) {
-      const key = format(new Date(v.dataVenda), "yyyy-MM");
-      const entry = map.get(key);
-      if (entry) {
-        entry.receita += Number(v.receita);
-        entry.custo += Number(v.custoTotal);
-        entry.lucro += Number(v.lucroBruto);
+    for (const linha of resumo?.porMes ?? []) {
+      const entrada = mapa.get(linha.mes);
+      if (entrada) {
+        entrada.receita = linha.receita;
+        entrada.custo = linha.custo;
+        entrada.lucro = linha.lucro;
       }
     }
+    return [...mapa.values()];
+  }, [resumo, periodo]);
 
-    return [...map.values()];
-  }, [filteredVendas, periodo]);
-
-  const profitByCategory = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const v of filteredVendas) {
-      const month = format(new Date(v.dataVenda), "MMM", { locale: ptBR });
-      map.set(month, (map.get(month) || 0) + Number(v.lucroBruto));
-    }
-    return [...map.entries()].map(([mes, lucro]) => ({ mes, lucro }));
-  }, [filteredVendas]);
-
-  const handleExportCSV = () => {
-    const headers = ["Data", "Receita", "Custo", "Lucro Bruto", "Margem %"];
-    const rows = filteredVendas.map((v) => [
-      format(new Date(v.dataVenda), "dd/MM/yyyy", { locale: ptBR }),
-      formatBRL(v.receita),
-      formatBRL(v.custoTotal),
-      formatBRL(v.lucroBruto),
-      Number(v.receita) > 0 ? formatPercent((Number(v.lucroBruto) / Number(v.receita)) * 100) : "0%",
-    ]);
-
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `fagom-shop-relatorio-${periodo}-${format(new Date(), "yyyyMMdd")}.csv`;
-    link.click();
-  };
-
-  const handleExportJSON = () => {
-    const data = {
-      periodo,
-      geradoEm: new Date().toISOString(),
-      usuario: user?.name,
-      kpis,
-      vendas: filteredVendas.map((v) => ({
-        data: v.dataVenda,
-        receita: Number(v.receita),
-        custo: Number(v.custoTotal),
-        lucro: Number(v.lucroBruto),
+  const profitByCategory = useMemo(
+    () =>
+      (resumo?.porMes ?? []).map((linha) => ({
+        mes: format(new Date(`${linha.mes}-01T00:00:00`), "MMM", { locale: ptBR }),
+        lucro: linha.lucro,
       })),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `fagom-shop-relatorio-${periodo}-${format(new Date(), "yyyyMMdd")}.json`;
-    link.click();
+    [resumo],
+  );
+
+  // O arquivo é montado no servidor e baixado direto pelo navegador.
+  const handleExport = (formato: "csv" | "json") => {
+    window.location.href = vendasApi.exportarUrl(formato, filtro);
   };
 
   const tooltipFormatter = (value: unknown) => [formatBRL(Number(value))];
@@ -177,7 +190,7 @@ export default function Relatorios() {
             <Select
               label="Período"
               value={periodo}
-              onChange={(e) => setPeriodo(e.target.value as typeof periodo)}
+              onChange={(e) => setPeriodo(e.target.value as Periodo)}
               className="w-40"
             >
               <option value="mes">Mês atual</option>
@@ -185,9 +198,15 @@ export default function Relatorios() {
               <option value="semestre">Último semestre</option>
               <option value="ano">Último ano</option>
             </Select>
-            <Button variant="ghost" onClick={handleExportCSV}><IconDownload /> CSV</Button>
-            <Button variant="ghost" onClick={handleExportJSON}><IconDownload /> JSON</Button>
-            <Button variant="primary"><IconRefresh /> Atualizar</Button>
+            <Button variant="ghost" onClick={() => handleExport("csv")}>
+              <IconDownload /> CSV
+            </Button>
+            <Button variant="ghost" onClick={() => handleExport("json")}>
+              <IconDownload /> JSON
+            </Button>
+            <Button onClick={load} disabled={loading}>
+              <IconRefresh /> Atualizar
+            </Button>
           </div>
         }
       />
@@ -198,7 +217,7 @@ export default function Relatorios() {
         </div>
       )}
 
-      {loading ? (
+      {loading && !resumo ? (
         <p className="text-muted">Carregando dados...</p>
       ) : (
         <>
@@ -207,7 +226,11 @@ export default function Relatorios() {
             <Stat label="Custo" value={formatBRL(kpis.custo)} />
             <Stat label="Lucro" value={formatBRL(kpis.lucro)} />
             <Stat label="Margem" value={formatPercent(kpis.margem)} />
-            <Stat label="Ticket médio" value={formatBRL(kpis.ticketMedio)} delta={`${kpis.count} vendas`} />
+            <Stat
+              label="Ticket médio"
+              value={formatBRL(kpis.ticketMedio)}
+              delta={`${kpis.count} vendas`}
+            />
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -217,8 +240,23 @@ export default function Relatorios() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                    <XAxis type="number" stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
-                    <YAxis dataKey="label" type="category" stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} width={60} />
+                    <XAxis
+                      type="number"
+                      stroke="rgba(255,255,255,0.4)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v)}
+                    />
+                    <YAxis
+                      dataKey="label"
+                      type="category"
+                      stroke="rgba(255,255,255,0.4)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      width={60}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#23262b",
@@ -275,10 +313,16 @@ export default function Relatorios() {
           </div>
 
           <Card className="mt-6 overflow-hidden">
-            <CardHeader title="Detalhamento de vendas" subtitle={`${kpis.count} registro(s) no período selecionado`} />
+            <CardHeader
+              title="Detalhamento de vendas"
+              subtitle={`${kpis.count} registro(s) no período selecionado`}
+            />
             <div className="mt-4 overflow-x-auto">
-              {filteredVendas.length === 0 ? (
-                <EmptyState title="Nenhuma venda no período" hint="Ajuste o filtro de período ou cadastre vendas." />
+              {vendas.length === 0 ? (
+                <EmptyState
+                  title="Nenhuma venda no período"
+                  hint="Ajuste o filtro de período ou cadastre vendas."
+                />
               ) : (
                 <table className="w-full text-left">
                   <thead className="sr-only sm:not-sr-only">
@@ -291,28 +335,44 @@ export default function Relatorios() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/70">
-                    {filteredVendas
-                      .sort((a, b) => new Date(b.dataVenda).getTime() - new Date(a.dataVenda).getTime())
-                      .map((v) => (
-                        <tr key={v.id} className="transition-colors hover:bg-black/5">
-                          <Td>{formatDate(v.dataVenda)}</Td>
-                          <Td className="tabular-nums text-white">{formatBRL(v.receita)}</Td>
-                          <Td className="tabular-nums text-muted">{formatBRL(v.custoTotal)}</Td>
-                          <Td className="tabular-nums font-semibold text-white">{formatBRL(v.lucroBruto)}</Td>
-                          <Td>
-                            <Badge tone={Number(v.lucroBruto) >= 0 ? "success" : "danger"}>
-                              {Number(v.receita) > 0
-                                ? formatPercent((Number(v.lucroBruto) / Number(v.receita)) * 100)
-                                : "0%"}
-                            </Badge>
-                          </Td>
-                        </tr>
-                      ))}
+                    {vendas.map((v) => (
+                      <tr key={v.id} className="transition-colors hover:bg-black/5">
+                        <Td>{formatDate(v.dataVenda)}</Td>
+                        <Td className="tabular-nums text-white">{formatBRL(v.receita)}</Td>
+                        <Td className="tabular-nums text-muted">{formatBRL(v.custoTotal)}</Td>
+                        <Td className="tabular-nums font-semibold text-white">{formatBRL(v.lucroBruto)}</Td>
+                        <Td>
+                          <Badge tone={Number(v.lucroBruto) >= 0 ? "success" : "danger"}>
+                            {Number(v.receita) > 0
+                              ? formatPercent((Number(v.lucroBruto) / Number(v.receita)) * 100)
+                              : "0%"}
+                          </Badge>
+                        </Td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               )}
             </div>
+
+            <Paginacao
+              pagina={info.pagina}
+              totalPaginas={info.totalPaginas}
+              total={info.total}
+              limite={info.limite}
+              carregando={loading}
+              onPagina={setPagina}
+              onLimite={(novo) => {
+                setLimite(novo);
+                setPagina(PAGINA_INICIAL);
+              }}
+            />
           </Card>
+
+          <p className="mt-4 text-xs text-muted">
+            Exportação gerada por {user?.name ?? "usuário"} em {format(new Date(), "dd/MM/yyyy HH:mm")}
+            , contendo todas as vendas do período selecionado.
+          </p>
         </>
       )}
     </div>

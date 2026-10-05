@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Calculos from "./pages/Calculos";
+import NovoCalculo from "./pages/NovoCalculo";
 import Vendas from "./pages/Vendas";
 import Analises from "./pages/Analises";
 import Relatorios from "./pages/Relatorios";
@@ -48,6 +49,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Calculos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calculos/novo"
+        element={
+          <ProtectedRoute>
+            <NovoCalculo />
           </ProtectedRoute>
         }
       />

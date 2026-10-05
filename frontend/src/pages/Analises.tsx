@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { analisesApi, type Analise } from "../lib/api";
-import { Button, Card, CardHeader, EmptyState, Field, PageHeader, Td, Th } from "../components/ui";
+import { useCallback, useEffect, useState } from "react";
+import { analisesApi, type Analise, type PaginacaoInfo } from "../lib/api";
+import { Button, Card, CardHeader, EmptyState, Field, PageHeader, Paginacao, Td, Th } from "../components/ui";
 import { formatBRL, formatDate, formatDateTime } from "../lib/format";
 
 const emptyForm = {
@@ -10,26 +10,40 @@ const emptyForm = {
   periodoFim: new Date().toISOString().slice(0, 10),
 };
 
+const PAGINA_INICIAL = 1;
+const LIMITE_INICIAL = 20;
+
 export default function Analises() {
   const [analises, setAnalises] = useState<Analise[]>([]);
+  const [pagina, setPagina] = useState(PAGINA_INICIAL);
+  const [limite, setLimite] = useState(LIMITE_INICIAL);
+  const [info, setInfo] = useState<PaginacaoInfo>({
+    pagina: PAGINA_INICIAL,
+    limite: LIMITE_INICIAL,
+    total: 0,
+    totalPaginas: 1,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState(emptyForm);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await analisesApi.list();
-      setAnalises(data);
+      const paginado = await analisesApi.list({ pagina, limite });
+      setAnalises(paginado.dados);
+      setInfo(paginado.paginacao);
+      setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar");
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagina, limite]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +54,8 @@ export default function Analises() {
         periodoInicio: new Date(form.periodoInicio).toISOString(),
         periodoFim: new Date(form.periodoFim).toISOString(),
       });
-      load();
+      setPagina(PAGINA_INICIAL);
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar análise");
     }
@@ -50,7 +65,8 @@ export default function Analises() {
     if (!confirm("Deseja realmente excluir esta análise?")) return;
     try {
       await analisesApi.delete(id);
-      setAnalises((prev) => prev.filter((a) => a.id !== id));
+      if (analises.length === 1 && pagina > 1) setPagina(pagina - 1);
+      else await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao excluir");
     }
@@ -94,7 +110,7 @@ export default function Analises() {
         </Card>
 
         <Card className="overflow-hidden xl:col-span-2">
-          <CardHeader title="Histórico" subtitle={`${analises.length} análise(s) gerada(s)`} />
+          <CardHeader title="Histórico" subtitle={`${info.total} análise(s) gerada(s)`} />
           <div className="mt-4 overflow-x-auto">
             {loading ? (
               <p className="px-5 py-10 text-center text-muted">Carregando...</p>
@@ -135,6 +151,19 @@ export default function Analises() {
               </table>
             )}
           </div>
+
+          <Paginacao
+            pagina={info.pagina}
+            totalPaginas={info.totalPaginas}
+            total={info.total}
+            limite={info.limite}
+            carregando={loading}
+            onPagina={setPagina}
+            onLimite={(novo) => {
+              setLimite(novo);
+              setPagina(PAGINA_INICIAL);
+            }}
+          />
         </Card>
       </div>
     </div>

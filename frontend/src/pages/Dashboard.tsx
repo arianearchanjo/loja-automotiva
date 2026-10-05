@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { calculosApi, vendasApi, type Calculo, type Venda } from "../lib/api";
+import { calculosApi, vendasApi, type Calculo, type Venda, type VendasResumo } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Badge, Card, CardHeader, EmptyState, PageHeader, Stat, Td, Th } from "../components/ui";
 import { formatBRL, formatDate, formatDateTime, formatPercent } from "../lib/format";
@@ -42,60 +42,67 @@ function IconCalc() {
   );
 }
 
-function monthKey(date: string): string {
-  return new Date(date).toISOString().slice(0, 7);
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
-  const [vendas, setVendas] = useState<Venda[]>([]);
-  const [calculos, setCalculos] = useState<Calculo[]>([]);
+  const [resumo, setResumo] = useState<VendasResumo | null>(null);
+  const [totalCalculos, setTotalCalculos] = useState(0);
+  const [ultimasVendas, setUltimasVendas] = useState<Venda[]>([]);
+  const [ultimosCalculos, setUltimosCalculos] = useState<Calculo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Totais e séries vêm agregados do banco; as listas trazem só a fatia
+  // necessária para as mini-tabelas (limite = 5).
   useEffect(() => {
-    Promise.all([vendasApi.list(), calculosApi.list()])
-      .then(([v, c]) => {
-        setVendas(v);
-        setCalculos(c);
+    Promise.all([
+      vendasApi.resumo(),
+      calculosApi.resumo(),
+      vendasApi.list({ pagina: 1, limite: 5 }),
+      calculosApi.list({ pagina: 1, limite: 5 }),
+    ])
+      .then(([vendasResumo, calculosResumo, vendasPagina, calculosPagina]) => {
+        setResumo(vendasResumo);
+        setTotalCalculos(calculosResumo.total);
+        setUltimasVendas(vendasPagina.dados);
+        setUltimosCalculos(calculosPagina.dados);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Erro ao carregar dados"))
       .finally(() => setLoading(false));
   }, []);
 
-  const kpis = useMemo(() => {
-    const receita = vendas.reduce((acc, v) => acc + Number(v.receita), 0);
-    const custo = vendas.reduce((acc, v) => acc + Number(v.custoTotal), 0);
-    const lucro = vendas.reduce((acc, v) => acc + Number(v.lucroBruto), 0);
-    const margem = receita > 0 ? (lucro / receita) * 100 : 0;
-    return { receita, custo, lucro, margem };
-  }, [vendas]);
+  const kpis = useMemo(
+    () => ({
+      receita: resumo?.receita ?? 0,
+      custo: resumo?.custo ?? 0,
+      lucro: resumo?.lucro ?? 0,
+      margem: resumo?.margem ?? 0,
+      vendas: resumo?.quantidade ?? 0,
+    }),
+    [resumo],
+  );
 
   const monthly = useMemo(() => {
-    const now = new Date();
-    const map = new Map<string, { receita: number; custo: number; lucro: number }>();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const agora = new Date();
+    const totalMeses = 6;
+    const mapa = new Map<string, { receita: number; custo: number; lucro: number }>();
+    for (let i = totalMeses - 1; i >= 0; i--) {
+      const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      map.set(key, { receita: 0, custo: 0, lucro: 0 });
+      mapa.set(key, { receita: 0, custo: 0, lucro: 0 });
     }
-    for (const v of vendas) {
-      const key = monthKey(v.dataVenda);
-      const entry = map.get(key);
-      if (entry) {
-        entry.receita += Number(v.receita);
-        entry.custo += Number(v.custoTotal);
-        entry.lucro += Number(v.lucroBruto);
+    for (const linha of resumo?.porMes ?? []) {
+      const entrada = mapa.get(linha.mes);
+      if (entrada) {
+        entrada.receita = linha.receita;
+        entrada.custo = linha.custo;
+        entrada.lucro = linha.lucro;
       }
     }
-    return [...map.entries()].map(([key, value]) => ({
+    return [...mapa.entries()].map(([key, value]) => ({
       label: new Date(`${key}-01T00:00:00`).toLocaleDateString("pt-BR", { month: "short" }),
       ...value,
     }));
-  }, [vendas]);
-
-  const recentVendas = [...vendas].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 5);
-  const recentCalculos = [...calculos].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 5);
+  }, [resumo]);
 
   return (
     <div className="animate-fade-up">
@@ -115,10 +122,10 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Stat label="Receita total" value={formatBRL(kpis.receita)} delta={`${vendas.length} venda(s) registrada(s)`} icon={<IconMoney />} />
+            <Stat label="Receita total" value={formatBRL(kpis.receita)} delta={`${kpis.vendas} venda(s) registrada(s)`} icon={<IconMoney />} />
             <Stat label="Custo total" value={formatBRL(kpis.custo)} icon={<IconTrend />} />
             <Stat label="Lucro bruto" value={formatBRL(kpis.lucro)} icon={<IconTrend />} />
-            <Stat label="Margem média" value={formatPercent(kpis.margem)} delta={`${calculos.length} cálculo(s) salvos`} icon={<IconCalc />} />
+            <Stat label="Margem média" value={formatPercent(kpis.margem)} delta={`${totalCalculos} cálculo(s) salvos`} icon={<IconCalc />} />
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
@@ -163,10 +170,10 @@ export default function Dashboard() {
             <Card className="lg:col-span-2">
               <CardHeader title="Últimas vendas" subtitle="Registros mais recentes" />
               <div className="mt-4 divide-y divide-border/70">
-                {recentVendas.length === 0 ? (
+                {ultimasVendas.length === 0 ? (
                   <EmptyState title="Nenhuma venda ainda" hint="Cadastre vendas na página de Vendas." />
                 ) : (
-                  recentVendas.map((v) => (
+                  ultimasVendas.map((v) => (
                     <div key={v.id} className="flex items-center justify-between gap-3 px-5 py-3">
                       <div>
                         <p className="text-sm font-semibold text-white">{formatBRL(v.receita)}</p>
@@ -184,9 +191,9 @@ export default function Dashboard() {
           </div>
 
           <Card className="mt-6 overflow-hidden">
-            <CardHeader title="Cálculos recentes" subtitle="Preço de venda direto e reverso" />
+            <CardHeader title="Cálculos recentes" subtitle="Direto, reverso e venda ideal" />
             <div className="mt-4 overflow-x-auto">
-              {recentCalculos.length === 0 ? (
+              {ultimosCalculos.length === 0 ? (
                 <EmptyState title="Nenhum cálculo ainda" hint="Use a página de Cálculos de Preço para começar." />
               ) : (
                 <table className="w-full text-left">
@@ -200,7 +207,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/70">
-                    {recentCalculos.map((c) => (
+                    {ultimosCalculos.map((c) => (
                       <tr key={c.id} className="transition-colors hover:bg-black/5">
                         <Td className="font-medium text-white">{c.nome}</Td>
                         <Td>

@@ -78,6 +78,52 @@ export type Analise = {
   atualizadoEm: string;
 };
 
+export type PaginacaoInfo = {
+  pagina: number;
+  limite: number;
+  total: number;
+  totalPaginas: number;
+};
+
+export type Paginado<T> = { dados: T[]; paginacao: PaginacaoInfo };
+
+export type FiltroPeriodo = { periodoInicio?: string; periodoFim?: string };
+
+export type ListParams = FiltroPeriodo & { pagina?: number; limite?: number };
+
+export type CalculosResumo = {
+  total: number;
+  lucroTotal: string | number;
+  precoTotal: string | number;
+  precoMedio: string | number;
+  porTipo: { tipo: Calculo["tipo"]; total: number }[];
+};
+
+export type VendasResumo = {
+  quantidade: number;
+  receita: number;
+  custo: number;
+  lucro: number;
+  margem: number;
+  ticketMedio: number;
+  porMes: { mes: string; receita: number; custo: number; lucro: number }[];
+};
+
+// Serializa apenas os parâmetros preenchidos, para não mandar "pagina=undefined".
+const comQuery = (
+  path: string,
+  params?: Record<string, string | number | undefined>,
+): string => {
+  if (!params) return path;
+  const busca = new URLSearchParams();
+  for (const [chave, valor] of Object.entries(params)) {
+    if (valor === undefined || valor === null || valor === "") continue;
+    busca.set(chave, String(valor));
+  }
+  const query = busca.toString();
+  return query ? `${path}?${query}` : path;
+};
+
 // O backend pode responder com "error" como string (erro de negócio) ou como
 // objeto de fieldErrors (Zod). Extrair a mensagem aqui evita mostrar
 // "[object Object]" na tela (RN61).
@@ -117,7 +163,9 @@ const api = async <T>(path: string, options?: RequestInit): Promise<T> => {
 };
 
 export const calculosApi = {
-  list: () => api<Calculo[]>("/api/calculos"),
+  list: (params?: ListParams) => api<Paginado<Calculo>>(comQuery("/api/calculos", params)),
+  // Totais agregados no banco: os cards não dependem da página carregada.
+  resumo: () => api<CalculosResumo>("/api/calculos/resumo"),
   get: (id: string) => api<Calculo>(`/api/calculos/${id}`),
   create: (data: CalculoInput) =>
     api<Calculo>("/api/calculos", {
@@ -135,7 +183,13 @@ export const calculosApi = {
 };
 
 export const vendasApi = {
-  list: () => api<Venda[]>("/api/vendas"),
+  list: (params?: ListParams) => api<Paginado<Venda>>(comQuery("/api/vendas", params)),
+  resumo: (params?: FiltroPeriodo) =>
+    api<VendasResumo>(comQuery("/api/vendas/resumo", params)),
+  // Download direto: o arquivo é montado no servidor (Content-Disposition),
+  // sem passar todas as vendas pelo navegador.
+  exportarUrl: (formato: "csv" | "json", params?: FiltroPeriodo) =>
+    comQuery("/api/vendas/exportar", { formato, ...params }),
   get: (id: string) => api<Venda>(`/api/vendas/${id}`),
   create: (data: VendaInput) =>
     api<Venda>("/api/vendas", {
@@ -147,7 +201,8 @@ export const vendasApi = {
 };
 
 export const analisesApi = {
-  list: () => api<Analise[]>("/api/analises"),
+  list: (params?: ListParams) =>
+    api<Paginado<Analise>>(comQuery("/api/analises", params)),
   get: (id: string) => api<Analise>(`/api/analises/${id}`),
   create: (data: { periodoInicio: string; periodoFim: string }) =>
     api<Analise>("/api/analises", {
