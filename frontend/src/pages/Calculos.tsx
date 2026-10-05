@@ -10,6 +10,9 @@ const emptyForm = {
   custoCompra: "",
   frete: "",
   taxaPlataforma: "",
+  metaVendas: "",
+  vendasAcumuladas: "",
+  descontoPercentual: "",
   margemDesejada: "",
   resultado: "",
 };
@@ -66,19 +69,34 @@ export default function Calculos() {
     load();
   }, []);
 
+  const calcularTaxaEfetiva = (current: typeof emptyForm) => {
+    const taxaPlataforma = Number(current.taxaPlataforma) || 0;
+    const metaVendas = Number(current.metaVendas) || 0;
+    const vendasAcumuladas = Number(current.vendasAcumuladas) || 0;
+    const descontoPercentual = current.descontoPercentual === "" ? 0 : Number(current.descontoPercentual) || 0;
+
+    const aplicaDesconto = metaVendas > 0 && vendasAcumuladas >= metaVendas;
+    if (!aplicaDesconto) {
+      return taxaPlataforma;
+    }
+
+    const taxaEfetiva = taxaPlataforma * (1 - descontoPercentual / 100);
+    return taxaEfetiva < 0 ? 0 : taxaEfetiva;
+  };
+
   const calculateResult = (current: typeof emptyForm) => {
     const pv = Number(current.precoVenda) || 0;
     const cc = Number(current.custoCompra) || 0;
     const frete = Number(current.frete) || 0;
-    const taxa = Number(current.taxaPlataforma) || 0;
+    const taxaEf = calcularTaxaEfetiva(current);
     const margem = Number(current.margemDesejada) || 0;
 
     if (current.tipo === "direto" && pv > 0) {
-      return String((pv - cc - frete - taxa - margem).toFixed(2));
+      return String((pv - cc - frete - taxaEf - margem).toFixed(2));
     }
 
     if (current.tipo === "reverso" && pv > 0 && margem > 0) {
-      return String((pv - frete - taxa - margem).toFixed(2));
+      return String((pv - frete - taxaEf - margem).toFixed(2));
     }
 
     return null;
@@ -103,6 +121,9 @@ export default function Calculos() {
         custoCompra: form.custoCompra ? Number(form.custoCompra) : undefined,
         frete: form.frete ? Number(form.frete) : undefined,
         taxaPlataforma: form.taxaPlataforma ? Number(form.taxaPlataforma) : undefined,
+        metaVendas: form.metaVendas ? Number(form.metaVendas) : undefined,
+        vendasAcumuladas: form.vendasAcumuladas ? Number(form.vendasAcumuladas) : undefined,
+        descontoPercentual: form.descontoPercentual ? Number(form.descontoPercentual) : undefined,
         margemDesejada: form.margemDesejada ? Number(form.margemDesejada) : undefined,
         resultado: form.resultado ? Number(form.resultado) : undefined,
       });
@@ -270,19 +291,80 @@ export default function Calculos() {
             </div>
 
             {showResult && form.resultado && (
-              <div className="rounded-xl border border-success/30 bg-success/10 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-success">Resultado</p>
-                    <p className="mt-1 text-2xl font-bold tabular-nums text-white">{formatBRL(form.resultado)}</p>
+              <div className="space-y-3">
+                <div className="rounded-xl border border-success/30 bg-success/10 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-success">Resultado</p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-white">{formatBRL(form.resultado)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted">Margem</p>
+                      <p className="font-semibold text-success">{formatBRL(form.margemDesejada)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted">Margem</p>
-                    <p className="font-semibold text-success">{formatBRL(form.margemDesejada)}</p>
-                  </div>
+                </div>
+                <div className="rounded-xl border border-border/50 bg-surface-strong/50 p-3 text-xs space-y-2">
+                  {(() => {
+                    const taxaOriginal = Number(form.taxaPlataforma) || 0;
+                    const metaVendas = Number(form.metaVendas) || 0;
+                    const vendasAcumuladas = Number(form.vendasAcumuladas) || 0;
+                    const descontoPercentual = form.descontoPercentual === "" ? 0 : Number(form.descontoPercentual) || 0;
+                    const aplicaDesconto = metaVendas > 0 && vendasAcumuladas >= metaVendas;
+                    const taxaEfetiva = calcularTaxaEfetiva(form);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted">Taxa original</span>
+                          <span className="tabular-nums text-white">{formatBRL(taxaOriginal.toFixed(2))}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted">Desconto aplicado</span>
+                          <span className="tabular-nums text-white">
+                            {aplicaDesconto ? `${descontoPercentual.toFixed(2)}%` : "meta não atingida"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                          <span className="text-muted">Taxa efetiva (usada no cálculo)</span>
+                          <span className="tabular-nums font-semibold text-white">{formatBRL(taxaEfetiva.toFixed(2))}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Field
+                label="Meta de vendas (R$)"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                value={form.metaVendas}
+                onChange={(e) => handleInputChange("metaVendas", e.target.value)}
+              />
+              <Field
+                label="Vendas acumuladas (R$)"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                value={form.vendasAcumuladas}
+                onChange={(e) => handleInputChange("vendasAcumuladas", e.target.value)}
+              />
+              <Field
+                label="Desconto na taxa (%)"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                placeholder="0,00"
+                value={form.descontoPercentual}
+                onChange={(e) => handleInputChange("descontoPercentual", e.target.value)}
+              />
+            </div>
 
             <Button type="submit" className="w-full py-3" disabled={!form.nome || !form.precoVenda}>
               Salvar cálculo
