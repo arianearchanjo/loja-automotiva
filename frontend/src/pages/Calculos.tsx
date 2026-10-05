@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react";
-import { calculosApi, type Calculo } from "../lib/api";
+import { calculosApi, type Calculo, type SimulacaoResultado } from "../lib/api";
 import { Badge, Button, Card, CardHeader, EmptyState, Field, PageHeader, Select, Td, Th, Stat } from "../components/ui";
-import { formatBRL, formatDateTime } from "../lib/format";
+import { formatBRL, formatDateTime, formatPercent } from "../lib/format";
+
+type TipoCalculo = "direto" | "reverso" | "vendaIdeal";
 
 const emptyForm = {
   nome: "",
-  tipo: "direto" as "direto" | "reverso",
+  tipo: "direto" as TipoCalculo,
   precoVenda: "",
   custoCompra: "",
   frete: "",
-  taxaPlataforma: "",
-  metaVendas: "",
-  vendasAcumuladas: "",
-  descontoPercentual: "",
-  margemDesejada: "",
-  resultado: "",
+  taxaPlataformaPercentual: "",
+  impostoPercentual: "",
+  descontoPlataforma: "",
+  metaVendaAlcancada: false,
+  margemPercentual: "",
 };
 
-const tipoLabels: Record<"direto" | "reverso", { label: string; hint: string; icon: React.ReactNode }> = {
+const tipoLabels: Record<TipoCalculo, { label: string; hint: string; icon: React.ReactNode }> = {
   direto: {
-    label: "Direto (Preço de Venda → Margem)",
-    hint: "Você sabe o preço de venda e quer descobrir a margem",
+    label: "Direto (Preço de venda → Lucro)",
+    hint: "Você informa o preço de venda e descobre o lucro e a margem",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
         <path d="M12 5v14M5 12h14" strokeLinecap="round" />
@@ -28,15 +29,53 @@ const tipoLabels: Record<"direto" | "reverso", { label: string; hint: string; ic
     ),
   },
   reverso: {
-    label: "Reverso (Margem → Preço de Venda)",
-    hint: "Você quer uma margem e precisa saber o preço máximo de compra",
+    label: "Reverso (Preço de venda → Custo máximo)",
+    hint: "Você informa o preço de venda e descobre até quanto pode pagar no produto",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
         <path d="M12 19V5M5 12h14" strokeLinecap="round" />
       </svg>
     ),
   },
+  vendaIdeal: {
+    label: "Venda ideal (Custo + margem → Melhor preço)",
+    hint: "Imposto e taxa da plataforma são calculados sobre o preço de venda, por isso o preço final é maior que a conta simples.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <path d="M4 17l5-5 3 3 7-7M14 8h5v5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
 };
+
+// Mapa explícito de tom do badge para os 3 tipos.
+const tipoTone: Record<TipoCalculo, "accent" | "primary" | "success"> = {
+  direto: "accent",
+  reverso: "primary",
+  vendaIdeal: "success",
+};
+
+const tipoBadge: Record<TipoCalculo, string> = {
+  direto: "Direto",
+  reverso: "Reverso",
+  vendaIdeal: "Venda ideal",
+};
+
+// Campos obrigatórios de cada modo, para liberar o botão de salvar (RN09/RN14).
+const podeSalvar = (form: typeof emptyForm): boolean => {
+  if (!form.nome) return false;
+  if (form.tipo === "vendaIdeal") {
+    return form.custoCompra !== "" && form.margemPercentual !== "";
+  }
+  return form.precoVenda !== "";
+};
+
+// Converte string vazia em undefined: "0" é um valor válido e precisa ir junto.
+const numeroOuAusente = (valor: string): number | undefined =>
+  valor === "" ? undefined : Number(valor);
+
+const formatarPercentual = (valor: number | string | null | undefined): string =>
+  formatPercent(valor, 2);
 
 function IconCalculator() {
   return (
@@ -52,7 +91,7 @@ export default function Calculos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState(emptyForm);
-  const [showResult, setShowResult] = useState(false);
+  const [resultado, setResultado] = useState<SimulacaoResultado | null>(null);
 
   const load = async () => {
     try {
@@ -69,66 +108,98 @@ export default function Calculos() {
     load();
   }, []);
 
-  const calcularTaxaEfetiva = (current: typeof emptyForm) => {
-    const taxaPlataforma = Number(current.taxaPlataforma) || 0;
-    const metaVendas = Number(current.metaVendas) || 0;
-    const vendasAcumuladas = Number(current.vendasAcumuladas) || 0;
-    const descontoPercentual = current.descontoPercentual === "" ? 0 : Number(current.descontoPercentual) || 0;
+  // Simulação em tempo real: o backend é a fonte da verdade da fórmula.
+  // O payload leva apenas campos de ENTRADA — nunca o resultado — para não
+  // criar laço de requisição.
+  useEffect(() => {
+    const {
+      tipo,
+      precoVenda,
+      custoCompra,
+      frete,
+      taxaPlataformaPercentual,
+      impostoPercentual,
+      descontoPlataforma,
+      metaVendaAlcancada,
+      margemPercentual,
+    } = form;
 
-    const aplicaDesconto = metaVendas > 0 && vendasAcumuladas >= metaVendas;
-    if (!aplicaDesconto) {
-      return taxaPlataforma;
+    const completo =
+      tipo === "vendaIdeal"
+        ? custoCompra !== "" && frete !== "" && margemPercentual !== ""
+        : precoVenda !== "" && margemPercentual !== "";
+
+    if (!completo) {
+      setResultado(null);
+      return;
     }
 
-    const taxaEfetiva = taxaPlataforma * (1 - descontoPercentual / 100);
-    return taxaEfetiva < 0 ? 0 : taxaEfetiva;
-  };
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const saida = await calculosApi.simular({
+          tipo,
+          precoVenda: numeroOuAusente(precoVenda),
+          custoCompra: numeroOuAusente(custoCompra),
+          frete: numeroOuAusente(frete),
+          taxaPlataformaPercentual: numeroOuAusente(taxaPlataformaPercentual),
+          impostoPercentual: numeroOuAusente(impostoPercentual),
+          descontoPlataforma: metaVendaAlcancada ? numeroOuAusente(descontoPlataforma) : undefined,
+          metaVendaAlcancada,
+          margemPercentual: numeroOuAusente(margemPercentual),
+        });
+        if (!controller.signal.aborted) {
+          setResultado(saida);
+          setError("");
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setResultado(null);
+        setError(err instanceof Error ? err.message : "Não foi possível calcular");
+      }
+    }, 250);
 
-  const calculateResult = (current: typeof emptyForm) => {
-    const pv = Number(current.precoVenda) || 0;
-    const cc = Number(current.custoCompra) || 0;
-    const frete = Number(current.frete) || 0;
-    const taxaEf = calcularTaxaEfetiva(current);
-    const margem = Number(current.margemDesejada) || 0;
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    form.tipo,
+    form.precoVenda,
+    form.custoCompra,
+    form.frete,
+    form.taxaPlataformaPercentual,
+    form.impostoPercentual,
+    form.descontoPlataforma,
+    form.metaVendaAlcancada,
+    form.margemPercentual,
+  ]);
 
-    if (current.tipo === "direto" && pv > 0) {
-      return String((pv - cc - frete - taxaEf - margem).toFixed(2));
-    }
-
-    if (current.tipo === "reverso" && pv > 0 && margem > 0) {
-      return String((pv - frete - taxaEf - margem).toFixed(2));
-    }
-
-    return null;
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    const next = { ...form, [field]: value };
-    const resultado = calculateResult(next);
-    setForm({ ...next, resultado: resultado ?? "" });
-    setShowResult(resultado !== null);
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setForm((anterior) => ({ ...anterior, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    const { metaVendaAlcancada } = form;
+
     try {
       await calculosApi.create({
         nome: form.nome,
         tipo: form.tipo,
-        precoVenda: form.precoVenda ? Number(form.precoVenda) : undefined,
-        custoCompra: form.custoCompra ? Number(form.custoCompra) : undefined,
-        frete: form.frete ? Number(form.frete) : undefined,
-        taxaPlataforma: form.taxaPlataforma ? Number(form.taxaPlataforma) : undefined,
-        metaVendas: form.metaVendas ? Number(form.metaVendas) : undefined,
-        vendasAcumuladas: form.vendasAcumuladas ? Number(form.vendasAcumuladas) : undefined,
-        descontoPercentual: form.descontoPercentual ? Number(form.descontoPercentual) : undefined,
-        margemDesejada: form.margemDesejada ? Number(form.margemDesejada) : undefined,
-        resultado: form.resultado ? Number(form.resultado) : undefined,
+        precoVenda: numeroOuAusente(form.precoVenda),
+        custoCompra: numeroOuAusente(form.custoCompra),
+        frete: numeroOuAusente(form.frete),
+        taxaPlataformaPercentual: numeroOuAusente(form.taxaPlataformaPercentual),
+        impostoPercentual: numeroOuAusente(form.impostoPercentual),
+        descontoPlataforma: metaVendaAlcancada ? numeroOuAusente(form.descontoPlataforma) : undefined,
+        metaVendaAlcancada,
+        margemPercentual: numeroOuAusente(form.margemPercentual),
       });
       setForm(emptyForm);
-      setShowResult(false);
+      setResultado(null);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar");
@@ -146,12 +217,16 @@ export default function Calculos() {
   };
 
   const currentTipo = tipoLabels[form.tipo];
+  const margemAbaixoDoDesejado =
+    resultado !== null &&
+    form.margemPercentual !== "" &&
+    resultado.margemObtidaPercentual < Number(form.margemPercentual);
 
   return (
     <div className="animate-fade-up">
       <PageHeader
         title="Cálculos de Preço"
-        subtitle="Calcule o preço de venda (direto) ou descubra o quanto pode gastar (reverso)."
+        subtitle="Calcule o lucro a partir do preço de venda, o custo máximo ou o melhor preço de venda possível."
         action={<Stat label="Total" value={String(calculos.length)} icon={<IconCalculator />} />}
       />
 
@@ -186,8 +261,9 @@ export default function Calculos() {
               value={form.tipo}
               onChange={(e) => handleInputChange("tipo", e.target.value)}
             >
-              <option value="direto">Direto — Preço de Venda → Margem</option>
-              <option value="reverso">Reverso — Margem → Preço máximo</option>
+              <option value="direto">Direto — Preço de venda → Lucro</option>
+              <option value="reverso">Reverso — Preço de venda → Custo máximo</option>
+              <option value="vendaIdeal">Venda ideal — Custo → Melhor preço</option>
             </Select>
 
             <div className="space-y-4">
@@ -225,26 +301,41 @@ export default function Calculos() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <Field
-                      label="Taxa plataforma (R$)"
+                      label="Taxa da plataforma (%)"
                       type="number"
                       step="0.01"
                       min="0"
+                      max="100"
                       placeholder="0,00"
-                      value={form.taxaPlataforma}
-                      onChange={(e) => handleInputChange("taxaPlataforma", e.target.value)}
+                      hint="Calculada sobre o preço de venda"
+                      value={form.taxaPlataformaPercentual}
+                      onChange={(e) => handleInputChange("taxaPlataformaPercentual", e.target.value)}
                     />
                     <Field
-                      label="Margem desejada (R$)"
+                      label="Imposto (%)"
                       type="number"
                       step="0.01"
                       min="0"
+                      max="100"
                       placeholder="0,00"
-                      value={form.margemDesejada}
-                      onChange={(e) => handleInputChange("margemDesejada", e.target.value)}
+                      hint="Percentual sobre o preço de venda"
+                      value={form.impostoPercentual}
+                      onChange={(e) => handleInputChange("impostoPercentual", e.target.value)}
                     />
                   </div>
+                  <Field
+                    label="Margem desejada (%)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="99.99"
+                    placeholder="0,00"
+                    hint="Percentual do preço de venda que você quer de lucro"
+                    value={form.margemPercentual}
+                    onChange={(e) => handleInputChange("margemPercentual", e.target.value)}
+                  />
                 </>
-              ) : (
+              ) : form.tipo === "reverso" ? (
                 <>
                   <Field
                     label="Preço de venda alvo (R$)"
@@ -256,117 +347,236 @@ export default function Calculos() {
                     value={form.precoVenda}
                     onChange={(e) => handleInputChange("precoVenda", e.target.value)}
                   />
+                  <Field
+                    label="Frete (R$)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    value={form.frete}
+                    onChange={(e) => handleInputChange("frete", e.target.value)}
+                  />
                   <div className="grid grid-cols-2 gap-4">
+                    <Field
+                      label="Taxa da plataforma (%)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      placeholder="0,00"
+                      hint="Calculada sobre o preço de venda"
+                      value={form.taxaPlataformaPercentual}
+                      onChange={(e) => handleInputChange("taxaPlataformaPercentual", e.target.value)}
+                    />
+                    <Field
+                      label="Imposto (%)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      placeholder="0,00"
+                      hint="Percentual sobre o preço de venda"
+                      value={form.impostoPercentual}
+                      onChange={(e) => handleInputChange("impostoPercentual", e.target.value)}
+                    />
+                  </div>
+                  <Field
+                    label="Margem desejada (%)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="99.99"
+                    required
+                    placeholder="0,00"
+                    hint="Percentual do preço de venda que você quer de lucro"
+                    value={form.margemPercentual}
+                    onChange={(e) => handleInputChange("margemPercentual", e.target.value)}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field
+                      label="Custo de compra (R$)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      placeholder="0,00"
+                      value={form.custoCompra}
+                      onChange={(e) => handleInputChange("custoCompra", e.target.value)}
+                    />
                     <Field
                       label="Frete (R$)"
                       type="number"
                       step="0.01"
                       min="0"
+                      required
                       placeholder="0,00"
                       value={form.frete}
                       onChange={(e) => handleInputChange("frete", e.target.value)}
                     />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <Field
-                      label="Taxa plataforma (R$)"
+                      label="Taxa da plataforma (%)"
                       type="number"
                       step="0.01"
                       min="0"
+                      max="100"
+                      required
                       placeholder="0,00"
-                      value={form.taxaPlataforma}
-                      onChange={(e) => handleInputChange("taxaPlataforma", e.target.value)}
+                      hint="Percentual sobre o preço de venda"
+                      value={form.taxaPlataformaPercentual}
+                      onChange={(e) => handleInputChange("taxaPlataformaPercentual", e.target.value)}
+                    />
+                    <Field
+                      label="Imposto (%)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      required
+                      placeholder="0,00"
+                      hint="Percentual sobre o preço de venda"
+                      value={form.impostoPercentual}
+                      onChange={(e) => handleInputChange("impostoPercentual", e.target.value)}
                     />
                   </div>
                   <Field
-                    label="Margem desejada (R$)"
+                    label="Margem de lucro desejada (%)"
                     type="number"
                     step="0.01"
                     min="0"
+                    max="99.99"
                     required
                     placeholder="0,00"
-                    value={form.margemDesejada}
-                    onChange={(e) => handleInputChange("margemDesejada", e.target.value)}
+                    hint="Margem mínima sobre o preço de venda"
+                    value={form.margemPercentual}
+                    onChange={(e) => handleInputChange("margemPercentual", e.target.value)}
                   />
+
+                  <div className="space-y-4 rounded-xl border border-border/50 bg-surface-strong/40 p-4">
+                    <label className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border bg-surface-strong accent-primary"
+                        checked={form.metaVendaAlcancada}
+                        onChange={(e) => handleInputChange("metaVendaAlcancada", e.target.checked)}
+                      />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                        Atingi a meta de venda
+                      </span>
+                    </label>
+                    <Field
+                      label="Desconto da plataforma (%)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      placeholder="0,00"
+                      disabled={!form.metaVendaAlcancada}
+                      hint="Reduz a taxa da plataforma em cima do valor de venda. Só vale se a meta for atingida."
+                      value={form.descontoPlataforma}
+                      onChange={(e) => handleInputChange("descontoPlataforma", e.target.value)}
+                    />
+                  </div>
                 </>
               )}
             </div>
 
-            {showResult && form.resultado && (
+            {resultado && (
               <div className="space-y-3">
                 <div className="rounded-xl border border-success/30 bg-success/10 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-success">Resultado</p>
-                      <p className="mt-1 text-2xl font-bold tabular-nums text-white">{formatBRL(form.resultado)}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-success">
+                        {form.tipo === "vendaIdeal" ? "Melhor preço de venda" : "Resultado"}
+                      </p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-white">
+                        {formatBRL(
+                          form.tipo === "vendaIdeal" ? resultado.precoVenda : resultado.resultado,
+                        )}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted">Margem</p>
-                      <p className="font-semibold text-success">{formatBRL(form.margemDesejada)}</p>
+                      <p className="text-xs text-muted">Margem obtida</p>
+                      <p className="font-semibold text-success">
+                        {formatarPercentual(resultado.margemObtidaPercentual)}
+                      </p>
                     </div>
                   </div>
                 </div>
+
                 <div className="rounded-xl border border-border/50 bg-surface-strong/50 p-3 text-xs space-y-2">
-                  {(() => {
-                    const taxaOriginal = Number(form.taxaPlataforma) || 0;
-                    const metaVendas = Number(form.metaVendas) || 0;
-                    const vendasAcumuladas = Number(form.vendasAcumuladas) || 0;
-                    const descontoPercentual = form.descontoPercentual === "" ? 0 : Number(form.descontoPercentual) || 0;
-                    const aplicaDesconto = metaVendas > 0 && vendasAcumuladas >= metaVendas;
-                    const taxaEfetiva = calcularTaxaEfetiva(form);
-                    return (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted">Taxa original</span>
-                          <span className="tabular-nums text-white">{formatBRL(taxaOriginal.toFixed(2))}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted">Desconto aplicado</span>
-                          <span className="tabular-nums text-white">
-                            {aplicaDesconto ? `${descontoPercentual.toFixed(2)}%` : "meta não atingida"}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-border/50 pt-2">
-                          <span className="text-muted">Taxa efetiva (usada no cálculo)</span>
-                          <span className="tabular-nums font-semibold text-white">{formatBRL(taxaEfetiva.toFixed(2))}</span>
-                        </div>
-                      </>
-                    );
-                  })()}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Preço de venda</span>
+                    <span className="tabular-nums text-white">{formatBRL(resultado.precoVenda)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Custo de compra</span>
+                    <span className="tabular-nums text-white">{formatBRL(resultado.custoCompra)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Frete</span>
+                    <span className="tabular-nums text-white">{formatBRL(form.frete)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Imposto</span>
+                    <span className="tabular-nums text-white">
+                      {formatBRL(resultado.valorImposto)}{" "}
+                      <span className="text-muted">({formatarPercentual(form.impostoPercentual)})</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Taxa da plataforma</span>
+                    <span className="tabular-nums text-white">
+                      {formatBRL(resultado.valorTaxa)}{" "}
+                      <span className="text-muted">({formatarPercentual(resultado.taxaEfetivaPercentual)})</span>
+                    </span>
+                  </div>
+                  {form.metaVendaAlcancada && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Taxa efetiva</span>
+                      <span className="tabular-nums text-white">
+                        {formatarPercentual(resultado.taxaEfetivaPercentual)} (desconto de{" "}
+                        {formatarPercentual(form.descontoPlataforma)} pela meta)
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                    <span className="text-muted">
+                      {form.tipo === "vendaIdeal" ? "Lucro" : "Resultado"}
+                    </span>
+                    <span className="tabular-nums font-semibold text-white">
+                      {formatBRL(resultado.lucro)}{" "}
+                      <span className="text-muted">
+                        (margem obtida: {formatarPercentual(resultado.margemObtidaPercentual)})
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted">Margem desejada</span>
+                    <span
+                      className={`tabular-nums font-semibold ${
+                        margemAbaixoDoDesejado ? "text-danger" : "text-white"
+                      }`}
+                    >
+                      {formatarPercentual(form.margemPercentual)}
+                    </span>
+                  </div>
                 </div>
+
+                {margemAbaixoDoDesejado && (
+                  <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-xs text-danger">
+                    A margem obtida está abaixo da margem desejada. Ajuste o preço de venda ou os
+                    percentuais para chegar no valor esperado.
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field
-                label="Meta de vendas (R$)"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0,00"
-                value={form.metaVendas}
-                onChange={(e) => handleInputChange("metaVendas", e.target.value)}
-              />
-              <Field
-                label="Vendas acumuladas (R$)"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0,00"
-                value={form.vendasAcumuladas}
-                onChange={(e) => handleInputChange("vendasAcumuladas", e.target.value)}
-              />
-              <Field
-                label="Desconto na taxa (%)"
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                placeholder="0,00"
-                value={form.descontoPercentual}
-                onChange={(e) => handleInputChange("descontoPercentual", e.target.value)}
-              />
-            </div>
-
-            <Button type="submit" className="w-full py-3" disabled={!form.nome || !form.precoVenda}>
+            <Button type="submit" className="w-full py-3" disabled={!podeSalvar(form)}>
               Salvar cálculo
             </Button>
           </form>
@@ -395,8 +605,10 @@ export default function Calculos() {
                     <Th>Tipo</Th>
                     <Th>Venda</Th>
                     <Th>Custo</Th>
-                    <Th>Resultado</Th>
-                    <Th>Margem</Th>
+                    <Th>Taxa (%)</Th>
+                    <Th>Imposto (%)</Th>
+                    <Th>Lucro (R$)</Th>
+                    <Th>Margem (%)</Th>
                     <Th>Criado em</Th>
                     <Th className="text-right w-24">Ações</Th>
                   </tr>
@@ -406,12 +618,18 @@ export default function Calculos() {
                     <tr key={c.id} className="transition-colors hover:bg-black/5">
                       <Td className="max-w-[250px] truncate font-semibold text-white">{c.nome}</Td>
                       <Td>
-                        <Badge tone={c.tipo === "direto" ? "accent" : "primary"}>{c.tipo}</Badge>
+                        <Badge tone={tipoTone[c.tipo]}>{tipoBadge[c.tipo]}</Badge>
                       </Td>
                       <Td className="tabular-nums text-muted">{formatBRL(c.precoVenda)}</Td>
                       <Td className="tabular-nums text-muted">{formatBRL(c.custoCompra)}</Td>
-                      <Td className="tabular-nums font-semibold text-white">{formatBRL(c.resultado)}</Td>
-                      <Td className="tabular-nums font-medium text-primary">{formatBRL(c.margemDesejada)}</Td>
+                      <Td className="tabular-nums text-muted">
+                        {formatPercent(c.taxaEfetivaPercentual ?? c.taxaPlataformaPercentual, 2)}
+                      </Td>
+                      <Td className="tabular-nums text-muted">{formatPercent(c.impostoPercentual, 2)}</Td>
+                      <Td className="tabular-nums font-semibold text-white">{formatBRL(c.lucro ?? c.resultado)}</Td>
+                      <Td className="tabular-nums font-medium text-primary">
+                        {formatPercent(c.margemObtidaPercentual ?? c.margemPercentual, 2)}
+                      </Td>
                       <Td className="text-muted">{formatDateTime(c.criadoEm)}</Td>
                       <Td className="text-right">
                         <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => handleDelete(c.id)}>
