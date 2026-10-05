@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middlewares/auth.js";
+import { calcularSkip, lerPaginacao, montarPaginado } from "../lib/paginacao.js";
 
 export const analisesRouter = Router();
 
@@ -13,11 +14,20 @@ const analiseSchema = z.object({
 });
 
 analisesRouter.get("/", async (req: any, res) => {
-  const analises = await prisma.analiseFinanceira.findMany({
-    where: { userId: req.user.id },
-    orderBy: { criadoEm: "desc" },
-  });
-  res.json(analises);
+  const { pagina, limite } = lerPaginacao(req.query);
+  const where = { userId: req.user.id };
+
+  const [dados, total] = await prisma.$transaction([
+    prisma.analiseFinanceira.findMany({
+      where,
+      orderBy: { criadoEm: "desc" },
+      skip: calcularSkip(pagina, limite),
+      take: limite,
+    }),
+    prisma.analiseFinanceira.count({ where }),
+  ]);
+
+  res.json(montarPaginado(dados, total, { pagina, limite }));
 });
 
 analisesRouter.post("/", async (req: any, res) => {

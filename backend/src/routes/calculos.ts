@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { calcularPrecificacao, ErroPrecificacao } from "../lib/precificacao.js";
 import { requireAuth } from "../middlewares/auth.js";
+import { calcularSkip, lerPaginacao, montarPaginado } from "../lib/paginacao.js";
 
 export const calculosRouter = Router();
 
@@ -23,7 +24,7 @@ const booleanOpcao = z.preprocess((valor) => {
   return valor;
 }, z.boolean().optional());
 
-// Campos obrigatórios por tipo de cálculo (RN09/RN14).
+// Campos obrigatórios por tipo (RN07/RN12).
 const obrigatoriosPorTipo = {
   direto: ["precoVenda", "custoCompra", "margemPercentual"],
   reverso: ["precoVenda", "frete", "margemPercentual"],
@@ -44,11 +45,43 @@ const calculoSchema = z.object({
 });
 
 calculosRouter.get("/", async (req: any, res) => {
-  const calculos = await prisma.calculoPreco.findMany({
-    where: { userId: req.user.id },
-    orderBy: { criadoEm: "desc" },
+  const { pagina, limite } = lerPaginacao(req.query);
+  const where = { userId: req.user.id };
+
+  const [dados, total] = await prisma.$transaction([
+    prisma.calculoPreco.findMany({
+      where,
+      orderBy: { criadoEm: "desc" },
+      skip: calcularSkip(pagina, limite),
+      take: limite,
+    }),
+    prisma.calculoPreco.count({ where }),
+  ]);
+
+  res.json(montarPaginado(dados, total, { pagina, limite }));
+});
+
+// Precisa vir antes de "/:id" para não ser capturada pelo parâmetro.
+calculosRouter.get("/resumo", async (req: any, res) => {
+  const where = { userId: req.user.id };
+
+  const [total, agregados, porTipo] = await Promise.all([
+    prisma.calculoPreco.count({ where }),
+    prisma.calculoPreco.aggregate({
+      where,
+      _sum: { lucro: true, precoVenda: true },
+      _avg: { precoVenda: true },
+    }),
+    prisma.calculoPreco.groupBy({ by: ["tipo"], where, _count: { _all: true } }),
+  ]);
+
+  res.json({
+    total,
+    lucroTotal: agregados._sum.lucro ?? 0,
+    precoTotal: agregados._sum.precoVenda ?? 0,
+    precoMedio: agregados._avg.precoVenda ?? 0,
+    porTipo: porTipo.map((item) => ({ tipo: item.tipo, total: item._count._all })),
   });
-  res.json(calculos);
 });
 
 calculosRouter.post("/", async (req: any, res) => {
@@ -59,7 +92,7 @@ calculosRouter.post("/", async (req: any, res) => {
 
   const { nome, tipo } = parsed.data;
 
-  // Campos obrigatórios do tipo escolhido (RN09/RN14).
+  // Campos obrigatórios do tipo escolhido (RN07/RN12).
   const faltando = obrigatoriosPorTipo[tipo].filter(
     (campo) => parsed.data[campo] === undefined || parsed.data[campo] === null,
   );

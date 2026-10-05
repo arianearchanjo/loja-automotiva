@@ -137,6 +137,8 @@ model CalculoPreco {
   criadoEm                DateTime           @default(now())
 
   @@index([userId])
+  // Listagem paginada por data: índice composto evita varrer a tabela do usuário.
+  @@index([userId, criadoEm])
   @@map("calculo_preco")
 }
 
@@ -153,6 +155,8 @@ model Venda {
   analises   AnaliseFinanceira[]
 
   @@index([userId])
+  // Filtros por período e ordenação da listagem paginada.
+  @@index([userId, dataVenda])
   @@map("venda")
 }
 
@@ -172,6 +176,7 @@ model AnaliseFinanceira {
   vendas       Venda[]
 
   @@index([userId])
+  @@index([userId, criadoEm])
   @@map("analise_financeira")
 }
 
