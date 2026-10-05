@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import { env } from "./env.js";
 import { auth } from "./lib/auth.js";
 import { calculosRouter } from "./routes/calculos.js";
+import { simulacaoRouter } from "./routes/simulacao.js";
 import { vendasRouter } from "./routes/vendas.js";
 import { analisesRouter } from "./routes/analises.js";
 import {
@@ -46,6 +47,7 @@ app.all(
 );
 
 app.use("/api/calculos", calculosRouter);
+app.use("/api/simulacoes", simulacaoRouter);
 app.use("/api/vendas", vendasRouter);
 app.use("/api/analises", analisesRouter);
 
