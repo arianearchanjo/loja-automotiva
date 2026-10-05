@@ -25,8 +25,17 @@ export function formatDateTime(value: string | Date | null | undefined): string 
   });
 }
 
-export function formatPercent(value: number | string | null | undefined): string {
+// Sem "casas", mantém a exibição enxuta (máx. 1 casa, sem zeros à esquerda).
+// Com "casas", fixa exatamente essa quantidade de casas decimais.
+export function formatPercent(
+  value: number | string | null | undefined,
+  casas?: number,
+): string {
   const num = Number(value ?? 0);
   if (Number.isNaN(num)) return "—";
-  return `${num.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  const opcoes =
+    casas === undefined
+      ? { maximumFractionDigits: 1 }
+      : { minimumFractionDigits: casas, maximumFractionDigits: casas };
+  return `${num.toLocaleString("pt-BR", opcoes)}%`;
 }
