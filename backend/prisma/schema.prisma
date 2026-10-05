@@ -86,6 +86,7 @@ model Verification {
 enum TipoCalculo {
   direto
   reverso
+  vendaIdeal
 }
 
 enum OrigemRelatorio {
@@ -98,24 +99,42 @@ enum FormatoRelatorio {
   xlsx
 }
 
+// ---------------------------------------------------------------------------
+// Cálculo de preço
+//
+// Regras:
+// - Todo percentual (taxa, imposto, desconto, margem) incide sempre sobre o
+//   `precoVenda`, nunca sobre o custo de compra.
+// - `descontoPlataforma` só é aplicado quando `metaVendaAlcancada` = true.
+// - `taxaEfetivaPercentual`, `valorImposto`, `valorTaxa`, `lucro`,
+//   `margemObtidaPercentual` e `resultado` são CALCULADOS pelo motor de
+//   precificação (backend/src/lib/precificacao.ts); nunca são informados
+//   pelo usuário.
+// - Percentuais usam Decimal(5,2); valores monetários usam Decimal(12,4).
+// ---------------------------------------------------------------------------
 model CalculoPreco {
-  id                 String       @id @default(cuid())
-  userId             String
-  user               Usuario       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nome               String
-  tipo               TipoCalculo
-  precoVenda         Decimal?     @db.Decimal(12, 4)
-  custoCompra        Decimal?     @db.Decimal(12, 4)
-  frete              Decimal?     @db.Decimal(12, 4)
-  taxaPlataforma     Decimal?     @db.Decimal(12, 4)
-  metaVendas         Decimal?     @db.Decimal(12, 4)
-  vendasAcumuladas   Decimal?     @db.Decimal(12, 4)
-  descontoPercentual Decimal?     @db.Decimal(5, 2)
-  margemDesejada     Decimal?     @db.Decimal(12, 4)
-  resultado          Decimal?     @db.Decimal(12, 4)
-  analiseId          String?
-  analise            AnaliseFinanceira? @relation(fields: [analiseId], references: [id], onDelete: SetNull)
-  criadoEm           DateTime     @default(now())
+  id                      String             @id @default(cuid())
+  userId                  String
+  user                    Usuario            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome                    String
+  tipo                    TipoCalculo
+  precoVenda              Decimal?           @db.Decimal(12, 4)
+  custoCompra             Decimal?           @db.Decimal(12, 4)
+  frete                   Decimal?           @db.Decimal(12, 4)
+  taxaPlataformaPercentual Decimal?           @db.Decimal(5, 2)
+  impostoPercentual       Decimal?           @db.Decimal(5, 2)
+  descontoPlataforma      Decimal?           @db.Decimal(5, 2)
+  metaVendaAlcancada      Boolean            @default(false)
+  margemPercentual        Decimal?           @db.Decimal(5, 2)
+  taxaEfetivaPercentual   Decimal?           @db.Decimal(5, 2)
+  valorImposto            Decimal?           @db.Decimal(12, 4)
+  valorTaxa               Decimal?           @db.Decimal(12, 4)
+  lucro                   Decimal?           @db.Decimal(12, 4)
+  margemObtidaPercentual  Decimal?           @db.Decimal(5, 2)
+  resultado               Decimal?           @db.Decimal(12, 4)
+  analiseId               String?
+  analise                 AnaliseFinanceira? @relation(fields: [analiseId], references: [id], onDelete: SetNull)
+  criadoEm                DateTime           @default(now())
 
   @@index([userId])
   @@map("calculo_preco")
