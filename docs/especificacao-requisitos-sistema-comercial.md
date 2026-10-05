@@ -11,8 +11,7 @@
 
 O sistema é uma ferramenta acadêmica de **gestão comercial e financeira** voltada a um usuário que hoje controla seu negócio por meio de múltiplas planilhas Excel. O objetivo central é substituir esse controle manual por uma aplicação web capaz de:
 
-- Calcular o **preço de venda** de produtos a partir de custos, frete e taxas;
-- Executar o **cálculo reverso**: a partir do preço de venda desejado, determinar quanto pode ser gasto com compra, frete, taxas de plataforma e demais despesas;
+- Calcular o **preço de venda** de produtos a partir de custos, frete, taxa da plataforma, imposto e margem desejada, pela fórmula `V = (C + F) / (1 − T − I − M)`;
 - Comparar **custo × venda** e acompanhar receitas, custos e lucro;
 - Manter **histórico** de cálculos e análises, com possibilidade de exclusão e geração de relatórios;
 - Oferecer um **dashboard** interativo e personalizável como painel central de uso.
@@ -61,8 +60,8 @@ Requisitos reorganizados por módulo, com prioridade sugerida (MoSCoW) para orie
 | ID | Requisito | Prioridade |
 |---|---|---|
 | RF03 | O usuário deve poder **cadastrar cálculos** de preço, que ficam salvos no sistema. | Must |
-| RF04 | O usuário deve poder **inserir valores** (custo, frete, taxas, margem desejada etc.) e obter o **resultado calculado**. | Must |
-| RF04.1 | O sistema deve oferecer o modo de **cálculo reverso**: a partir do preço de venda informado, calcular o valor máximo disponível para compra, frete, taxas e demais despesas. | Must |
+| RF04 | O usuário deve poder **inserir valores** (custo, frete, taxa da plataforma, imposto, margem desejada etc.) e obter o **preço de venda calculado** pela fórmula `V = (C + F) / (1 − T − I − M)`. | Must |
+| RF04.1 | O sistema deve calcular o preço de venda de forma que o **lucro restante seja exatamente a margem desejada sobre o valor de venda**, depois de descontar custo, frete, taxa e imposto. | Must |
 | RF05 | O usuário deve poder **consultar o histórico** de cálculos realizados. | Must |
 | RF06 | O usuário deve poder **excluir** um cálculo do histórico. | Must |
 | RF07 | O usuário deve poder **gerar um relatório** (arquivo) com os resultados de um cálculo. | Should |
@@ -98,7 +97,7 @@ O levantamento original concentrava-se em regras de negócio; os itens abaixo fo
 | RNF02 | Segurança | Toda comunicação entre front-end e API deve ocorrer via HTTPS em produção. |
 | RNF03 | Validação | Toda entrada de dados no back-end deve ser validada com Zod antes de persistência (defesa em profundidade, além da validação de front-end). |
 | RNF04 | Usabilidade | O dashboard deve ser responsivo (desktop e mobile), usando Tailwind CSS. |
-| RNF05 | Desempenho | Cálculos (diretos e reversos) devem retornar resultado em até 1s em condições normais de uso. |
+| RNF05 | Desempenho | Cálculos devem retornar resultado em até 1s em condições normais de uso. |
 | RNF06 | Confiabilidade | Falhas de conexão ou do sistema não devem corromper ou apagar dados já persistidos (RN57, RN64). |
 | RNF07 | Manutenibilidade | O código deve seguir padronização via ESLint + Prettier e ter cobertura de testes automatizados (Vitest) para as regras de cálculo. |
 | RNF08 | Portabilidade de dados | Relatórios devem poder ser exportados em PDF (jsPDF) e Excel/CSV (ExcelJS). |
@@ -127,10 +126,12 @@ Regras de negócio organizadas por módulo, preservando a numeração original d
 
 | ID | Regra |
 |---|---|
-| RN09 | Todos os campos obrigatórios devem ser preenchidos. |
+| RN09 | Todos os campos obrigatórios devem ser preenchidos (nome, custo de compra e margem desejada). |
+| RN09.1 | O preço de venda é calculado por `V = (C + F) / (1 − T − I − M)`, garantindo que o lucro restante sobre `V` seja exatamente a margem desejada. |
+| RN09.2 | A taxa da plataforma é reduzida pelo percentual de desconto quando `metaVendas > 0` e `vendasAcumuladas >= metaVendas`; a taxa efetiva resultante é a usada como `T` na fórmula. |
 | RN10 | Campos numéricos aceitam somente números válidos. |
 | RN11 | O sistema aceita e padroniza vírgula ou ponto decimal. |
-| RN12 | Operações inválidas, como divisão por zero, são impedidas. |
+| RN12 | Operações inválidas, como divisão por zero, são impedidas — a soma de taxa, imposto e margem precisa ser menor que 100%. |
 | RN13 | Valores negativos são aceitos somente quando permitidos pelo contexto. |
 | RN14 | Os valores são validados antes do cálculo. |
 | RN15 | Cada cálculo possui identificação, valores, resultado, data e hora. |
@@ -213,7 +214,7 @@ graph TD
     U --> UC1[Login / Logout]
     U --> UC2[Visualizar Dashboard]
     U --> UC3[Cadastrar Cálculo de Preço]
-    U --> UC4[Executar Cálculo Reverso]
+    U --> UC4[Obter Preço de Venda a partir da Margem]
     U --> UC5[Consultar Histórico de Cálculos]
     U --> UC6[Excluir Cálculo]
     U --> UC7[Gerar Relatório de Cálculo]
@@ -233,17 +234,23 @@ graph TD
     UC11 -.include.-> UC17
 ```
 
-### 6.2 Fluxo do Cálculo Reverso (principal diferencial do sistema)
+### 6.2 Fluxo do Cálculo de Preço de Venda (principal diferencial do sistema)
+
+Fórmula: `V = (C + F) / (1 − T − I − M)`
 
 ```mermaid
 flowchart TD
-    A[Usuário informa preço de venda desejado] --> B[Usuário informa taxas fixas da plataforma / % de comissão]
-    B --> C{Dados válidos? RN09-RN14}
+    A[Usuário informa custo, frete, taxa, imposto e margem desejada] --> B{A meta de vendas foi atingida? RN09.2}
+    B -- Sim --> B1[Aplicar desconto percentual sobre a taxa da plataforma]
+    B -- Não --> B2[Manter taxa original]
+    B1 --> C{Dados válidos? RN09-RN14}
+    B2 --> C
     C -- Não --> D[Exibir erro de validação]
     D --> A
-    C -- Sim --> E[Sistema calcula valor líquido após taxas]
-    E --> F[Sistema subtrai margem de lucro desejada]
-    F --> G[Sistema apresenta valor máximo disponível para: compra + frete + despesas]
+    C -- Sim --> E{Taxa + Imposto + Margem < 100%? RN12}
+    E -- Não --> D
+    E -- Sim --> F[Sistema calcula V = (C + F) / (1 − T − I − M)]
+    F --> G[Sistema apresenta o detalhamento: custo, frete, taxa, imposto, lucro e venda]
     G --> H{Usuário confirma salvar? RN17-RN18}
     H -- Sim --> I[Persistir cálculo com ID, valores, resultado, data/hora - RN15]
     H -- Não --> J[Descartar / permitir novo ajuste]
@@ -285,11 +292,15 @@ erDiagram
         string usuarioId FK
         string nome
         string tipo "direto | reverso"
-        decimal precoVenda
-        decimal custoCompra
-        decimal frete
-        decimal taxaPlataforma
-        decimal margemDesejada
+        decimal precoVenda "V = (C+F)/(1-T-I-M)"
+        decimal custoCompra "C"
+        decimal frete "F"
+        decimal taxaPlataforma "T (%)"
+        decimal imposto "I (%)"
+        decimal margemDesejada "M (%)"
+        decimal metaVendas
+        decimal vendasAcumuladas
+        decimal descontoPercentual
         decimal resultado
         datetime criadoEm
     }
@@ -332,7 +343,7 @@ erDiagram
 ```
 
 **Notas sobre o modelo:**
-- `CALCULO_PRECO.tipo` distingue o **cálculo direto** (custo → preço) do **cálculo reverso** (preço → custo máximo), evitando duplicar entidades.
+- `CALCULO_PRECO.precoVenda` guarda o resultado de `V = (C + F) / (1 − T − I − M)`; `taxaPlataforma`, `imposto` e `margemDesejada` são percentuais. `tipo` é mantido por compatibilidade com o enum `TipoCalculo { direto, reverso }`.
 - O vínculo opcional entre `CALCULO_PRECO` e `ANALISE_FINANCEIRA` implementa a RN24 (cálculo vinculado a análise não pode ser excluído).
 - `RELATORIO` é modelado como entidade própria (e não apenas um export "on the fly") para permitir histórico/rastreabilidade de gerações, alinhado à RN26/RN41.
 - `SESSAO` suporta RN02 (bloqueio após tentativas inválidas — controlado por contagem/tempo), RN05 (expiração por inatividade) e RN50–RN52 (tempo de uso).
@@ -392,7 +403,7 @@ flowchart LR
 | RF01 (Login/Logout) | RN01–RN06 |
 | RF02 (Dashboard) | RN07, RN08 |
 | RF03–RF04 (Cadastrar/Calcular) | RN09–RN18 |
-| RF04.1 (Cálculo reverso) | RN09–RN14 |
+| RF04.1 (Preço de venda pela margem) | RN09–RN14 |
 | RF05 (Histórico de cálculos) | RN19, RN20 |
 | RF06 (Excluir cálculo) | RN21–RN24, RN55–RN57 |
 | RF07 (Relatório de cálculo) | RN25–RN27 |
@@ -411,7 +422,7 @@ flowchart LR
 
 | Fase | Escopo |
 |---|---|
-| **MVP** | RF01, RF02, RF03, RF04, RF04.1, RF05, RF06 — núcleo de autenticação e cálculo (direto + reverso), com validações essenciais (RN01–RN27). |
+| **MVP** | RF01, RF02, RF03, RF04, RF04.1, RF05, RF06 — núcleo de autenticação e cálculo do preço de venda, com validações essenciais (RN01–RN27). |
 | **v1.1** | RF07 (relatórios de cálculo), RF13 (configurações básicas). |
 | **v1.2** | RF08, RF09, RF10, RF11 — módulo financeiro. |
 | **v1.3** | RF12 (relatórios financeiros), RF14, RF15, RF16. |
@@ -421,7 +432,7 @@ flowchart LR
 
 ## 9. Pontos em Aberto para a Equipe
 
-1. Definir as fórmulas exatas do cálculo direto e do cálculo reverso (depende das planilhas do usuário-alvo, ainda a serem coletadas).
+1. Fórmulas do cálculo do preço de venda já definidas: `V = (C + F) / (1 - T - I - M)`. Falta validar com as planilhas do usuário-alvo.
 2. Definir o conjunto de campos obrigatórios de "dados de venda" (RF08) — ex.: quais categorias de custo compõem o custo total.
 3. Definir regra de bloqueio de login (RN02): tempo de bloqueio e se há reset por e-mail.
 4. Confirmar se `RELATORIO` deve ser persistido (histórico de exportações) ou gerado sob demanda sem registro em banco.

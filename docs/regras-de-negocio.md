@@ -24,10 +24,12 @@ Regras de negócio organizadas por módulo, preservando a numeração original d
 
 | ID | Regra |
 |---|---|
-| RN09 | Todos os campos obrigatórios devem ser preenchidos. |
+| RN09 | Todos os campos obrigatórios devem ser preenchidos (nome, custo de compra e margem desejada). |
+| RN09.1 | O preço de venda é calculado por `V = (C + F) / (1 − T − I − M)`, garantindo que o lucro restante sobre `V` seja exatamente a margem desejada. |
+| RN09.2 | A taxa da plataforma é reduzida pelo percentual de desconto quando `metaVendas > 0` e `vendasAcumuladas >= metaVendas`; a taxa efetiva resultante é a usada como `T` na fórmula. |
 | RN10 | Campos numéricos aceitam somente números válidos. |
 | RN11 | O sistema aceita e padroniza vírgula ou ponto decimal. |
-| RN12 | Operações inválidas, como divisão por zero, são impedidas. |
+| RN12 | Operações inválidas, como divisão por zero, são impedidas — a soma de taxa, imposto e margem precisa ser menor que 100%. |
 | RN13 | Valores negativos são aceitos somente quando permitidos pelo contexto. |
 | RN14 | Os valores são validados antes do cálculo. |
 | RN15 | Cada cálculo possui identificação, valores, resultado, data e hora. |

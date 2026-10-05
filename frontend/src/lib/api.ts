@@ -7,6 +7,7 @@ export type Calculo = {
   custoCompra: string | null;
   frete: string | null;
   taxaPlataforma: string | null;
+  imposto?: string | null;
   metaVendas?: string | null;
   vendasAcumuladas?: string | null;
   descontoPercentual?: string | null;
@@ -23,6 +24,7 @@ export type CalculoInput = {
   custoCompra?: number | string | null;
   frete?: number | string | null;
   taxaPlataforma?: number | string | null;
+  imposto?: number | string | null;
   metaVendas?: number | string | null;
   vendasAcumuladas?: number | string | null;
   descontoPercentual?: number | string | null;

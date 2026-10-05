@@ -11,9 +11,9 @@ O sistema é uma ferramenta acadêmica de **gestão comercial e financeira** vol
 usuário que hoje controla seu negócio por meio de múltiplas planilhas Excel. O objetivo
 central é substituir esse controle manual por uma aplicação web capaz de:
 
-- Calcular o **preço de venda** de produtos a partir de custos, frete e taxas;
-- Executar o **cálculo reverso**: a partir do preço de venda desejado, determinar quanto
-  pode ser gasto com compra, frete, taxas de plataforma e demais despesas;
+- Calcular o **preço de venda** de produtos a partir de custos, frete, taxa da plataforma,
+  imposto e margem de lucro desejada, pela fórmula `V = (C + F) / (1 − T − I − M)` — de forma
+  que sobre o valor de venda sobrem exatamente a margem desejada;
 - Comparar **custo × venda** e acompanhar receitas, custos e lucro;
 - Manter **histórico** de cálculos e análises, com possibilidade de exclusão e geração de
   relatórios;

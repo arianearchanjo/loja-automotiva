@@ -184,7 +184,7 @@ export default function Dashboard() {
           </div>
 
           <Card className="mt-6 overflow-hidden">
-            <CardHeader title="Cálculos recentes" subtitle="Preço de venda direto e reverso" />
+            <CardHeader title="Cálculos recentes" subtitle="Preço de venda a partir de custo, frete e margem" />
             <div className="mt-4 overflow-x-auto">
               {recentCalculos.length === 0 ? (
                 <EmptyState title="Nenhum cálculo ainda" hint="Use a página de Cálculos de Preço para começar." />
@@ -193,9 +193,9 @@ export default function Dashboard() {
                   <thead className="sr-only sm:not-sr-only">
                     <tr>
                       <Th>Nome</Th>
-                      <Th>Tipo</Th>
+                      <Th>Custo</Th>
+                      <Th>Margem</Th>
                       <Th>Preço de venda</Th>
-                      <Th>Resultado</Th>
                       <Th>Criado em</Th>
                     </tr>
                   </thead>
@@ -203,11 +203,11 @@ export default function Dashboard() {
                     {recentCalculos.map((c) => (
                       <tr key={c.id} className="transition-colors hover:bg-black/5">
                         <Td className="font-medium text-white">{c.nome}</Td>
-                        <Td>
-                          <Badge tone={c.tipo === "direto" ? "accent" : "primary"}>{c.tipo}</Badge>
+                        <Td className="tabular-nums text-muted">{formatBRL(c.custoCompra)}</Td>
+                        <Td className="tabular-nums text-primary">{formatPercent(c.margemDesejada)}</Td>
+                        <Td className="tabular-nums font-semibold text-success">
+                          {formatBRL(c.precoVenda ?? c.resultado)}
                         </Td>
-                        <Td className="tabular-nums text-muted">{formatBRL(c.precoVenda)}</Td>
-                        <Td className="tabular-nums font-semibold text-white">{formatBRL(c.resultado)}</Td>
                         <Td className="text-muted">{formatDateTime(c.criadoEm)}</Td>
                       </tr>
                     ))}

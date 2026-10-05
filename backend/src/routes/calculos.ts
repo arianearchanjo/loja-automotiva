@@ -7,19 +7,29 @@ export const calculosRouter = Router();
 
 calculosRouter.use(requireAuth);
 
-const calculoSchema = z.object({
-  nome: z.string().min(1).max(100),
-  tipo: z.enum(["direto", "reverso"]),
-  precoVenda: z.coerce.number().optional(),
-  custoCompra: z.coerce.number().optional(),
-  frete: z.coerce.number().optional(),
-  taxaPlataforma: z.coerce.number().optional(),
-  metaVendas: z.coerce.number().min(0).optional(),
-  vendasAcumuladas: z.coerce.number().min(0).optional(),
-  descontoPercentual: z.coerce.number().min(0).max(100).optional(),
-  margemDesejada: z.coerce.number().optional(),
-  resultado: z.coerce.number().optional(),
-});
+const calculoSchema = z
+  .object({
+    nome: z.string().min(1).max(100),
+    tipo: z.enum(["direto", "reverso"]),
+    precoVenda: z.coerce.number().min(0).optional(),
+    custoCompra: z.coerce.number().min(0).optional(),
+    frete: z.coerce.number().min(0).optional(),
+    taxaPlataforma: z.coerce.number().min(0).max(100).optional(),
+    imposto: z.coerce.number().min(0).max(100).optional(),
+    margemDesejada: z.coerce.number().min(0).max(100).optional(),
+    metaVendas: z.coerce.number().min(0).optional(),
+    vendasAcumuladas: z.coerce.number().min(0).optional(),
+    descontoPercentual: z.coerce.number().min(0).max(100).optional(),
+    resultado: z.coerce.number().min(0).optional(),
+  })
+  .refine(
+    (d) => (d.taxaPlataforma ?? 0) + (d.imposto ?? 0) + (d.margemDesejada ?? 0) < 100,
+    {
+      message:
+        "A soma de taxa, imposto e margem deve ser menor que 100% para gerar um preço de venda",
+      path: ["margemDesejada"],
+    },
+  );
 
 calculosRouter.get("/", async (req: any, res) => {
   const calculos = await prisma.calculoPreco.findMany({

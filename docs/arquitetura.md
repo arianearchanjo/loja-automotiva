@@ -14,7 +14,7 @@ flowchart TD
     U --> UC1[Login / Logout]
     U --> UC2[Visualizar Dashboard]
     U --> UC3[Cadastrar Cálculo de Preço]
-    U --> UC4[Executar Cálculo Reverso]
+    U --> UC4[Obter Preço de Venda a partir da Margem]
     U --> UC5[Consultar Histórico de Cálculos]
     U --> UC6[Excluir Cálculo]
     U --> UC7[Gerar Relatório de Cálculo]
@@ -34,17 +34,32 @@ flowchart TD
     UC11 -.include.-> UC17
 ```
 
-## 6.2 Fluxo do Cálculo Reverso (principal diferencial do sistema)
+## 6.2 Fluxo do Cálculo de Preço de Venda (principal diferencial do sistema)
+
+Fórmula: `V = (C + F) / (1 − T − I − M)`
+
+| Símbolo | Significado |
+|---|---|
+| V | valor de venda a cobrar (resultado) |
+| C | custo unitário do produto |
+| F | frete por unidade |
+| T | taxa da plataforma (efetiva, em %) |
+| I | imposto (%) |
+| M | margem de lucro desejada (%) |
 
 ```mermaid
 flowchart TD
-    A[Usuário informa preço de venda desejado] --> B[Usuário informa taxas fixas da plataforma / % de comissão]
-    B --> C{Dados válidos? RN09-RN14}
+    A[Usuário informa custo, frete, taxa, imposto e margem desejada] --> B{A meta de vendas foi atingida?}
+    B -- Sim --> B1[Aplicar desconto percentual sobre a taxa da plataforma]
+    B -- Não --> B2[Manter taxa original]
+    B1 --> C{Dados válidos? RN09-RN14}
+    B2 --> C
     C -- Não --> D[Exibir erro de validação]
     D --> A
-    C -- Sim --> E[Sistema calcula valor líquido após taxas]
-    E --> F[Sistema subtrai margem de lucro desejada]
-    F --> G[Sistema apresenta valor máximo disponível para: compra + frete + despesas]
+    C -- Sim --> E{Taxa + Imposto + Margem < 100%? RN12}
+    E -- Não --> D
+    E -- Sim --> F[Sistema calcula V = (C + F) / (1 − T − I − M)]
+    F --> G[Sistema apresenta o detalhamento: custo, frete, taxa, imposto, lucro e venda]
     G --> H{Usuário confirma salvar? RN17-RN18}
     H -- Sim --> I[Persistir cálculo com ID, valores, resultado, data/hora - RN15]
     H -- Não --> J[Descartar / permitir novo ajuste]

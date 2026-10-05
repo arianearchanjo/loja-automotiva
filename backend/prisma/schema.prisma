@@ -108,6 +108,7 @@ model CalculoPreco {
   custoCompra        Decimal?     @db.Decimal(12, 4)
   frete              Decimal?     @db.Decimal(12, 4)
   taxaPlataforma     Decimal?     @db.Decimal(12, 4)
+  imposto            Decimal?     @db.Decimal(12, 4)
   metaVendas         Decimal?     @db.Decimal(12, 4)
   vendasAcumuladas   Decimal?     @db.Decimal(12, 4)
   descontoPercentual Decimal?     @db.Decimal(5, 2)

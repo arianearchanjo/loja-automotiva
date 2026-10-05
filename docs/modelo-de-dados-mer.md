@@ -44,11 +44,15 @@ erDiagram
         string usuarioId FK
         string nome
         string tipo "direto | reverso"
-        decimal precoVenda
-        decimal custoCompra
-        decimal frete
-        decimal taxaPlataforma
-        decimal margemDesejada
+        decimal precoVenda "V = (C+F)/(1-T-I-M)"
+        decimal custoCompra "C"
+        decimal frete "F"
+        decimal taxaPlataforma "T (%)"
+        decimal imposto "I (%)"
+        decimal margemDesejada "M (%)"
+        decimal metaVendas
+        decimal vendasAcumuladas
+        decimal descontoPercentual
         decimal resultado
         datetime criadoEm
     }
@@ -96,7 +100,7 @@ erDiagram
 |---|---|---|
 | **USUARIO** | id, nome, email, senhaHash, criadoEm | Gerenciada pelo Better Auth (tabela `usuario`). |
 | **SESSAO** | id, usuarioId, iniciadaEm, ultimaAtividade, encerradaEm | Suporta RN02, RN05, RN50–RN52. |
-| **CALCULO_PRECO** | id, usuarioId, nome, tipo, precoVenda, custoCompra, frete, taxaPlataforma, margemDesejada, resultado, criadoEm | `tipo` distingue direto/reverso (RN15). |
+| **CALCULO_PRECO** | id, usuarioId, nome, tipo, precoVenda, custoCompra, frete, taxaPlataforma, imposto, margemDesejada, metaVendas, vendasAcumuladas, descontoPercentual, resultado, criadoEm | `precoVenda` é o resultado de `V = (C+F)/(1-T-I-M)` (RF04.1). `taxaPlataforma`, `imposto` e `margemDesejada` são percentuais. `tipo` distingue direto/reverso (RN15). |
 | **VENDA** | id, usuarioId, receita, custoTotal, lucroBruto, dataVenda | Dados financeiros (RF08). |
 | **ANALISE_FINANCEIRA** | id, usuarioId, periodoInicio, periodoFim, receitaTotal, custoTotal, lucroTotal, criadoEm, atualizadoEm | Agrega vendas e cálculos (RN31, RN36). |
 | **RELATORIO** | id, origemTipo, origemId, formato, geradoEm | Histórico de exportações (RN26, RN41). |

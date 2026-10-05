@@ -22,8 +22,8 @@ desenvolvimento incremental.
 | ID | Requisito | Prioridade |
 |---|---|---|
 | RF03 | O usuário deve poder **cadastrar cálculos** de preço, que ficam salvos no sistema. | Must |
-| RF04 | O usuário deve poder **inserir valores** (custo, frete, taxas, margem desejada etc.) e obter o **resultado calculado**. | Must |
-| RF04.1 | O sistema deve oferecer o modo de **cálculo reverso**: a partir do preço de venda informado, calcular o valor máximo disponível para compra, frete, taxas e demais despesas. | Must |
+| RF04 | O usuário deve poder **inserir valores** (custo, frete, taxa da plataforma, imposto, margem desejada etc.) e obter o **preço de venda calculado** pela fórmula `V = (C + F) / (1 − T − I − M)`. | Must |
+| RF04.1 | O sistema deve calcular o preço de venda de forma que o **lucro restante seja exatamente a margem desejada sobre o valor de venda**, depois de descontar custo, frete, taxa e imposto. | Must |
 | RF05 | O usuário deve poder **consultar o histórico** de cálculos realizados. | Must |
 | RF06 | O usuário deve poder **excluir** um cálculo do histórico. | Must |
 | RF07 | O usuário deve poder **gerar um relatório** (arquivo) com os resultados de um cálculo. | Should |
@@ -55,7 +55,7 @@ desenvolvimento incremental.
 | RNF02 | Segurança | Toda comunicação entre front-end e API deve ocorrer via HTTPS em produção. |
 | RNF03 | Validação | Toda entrada de dados no back-end deve ser validada com Zod antes de persistência (defesa em profundidade, além da validação de front-end). |
 | RNF04 | Usabilidade | O dashboard deve ser responsivo (desktop e mobile), usando Tailwind CSS. |
-| RNF05 | Desempenho | Cálculos (diretos e reversos) devem retornar resultado em até 1s em condições normais de uso. |
+| RNF05 | Desempenho | Cálculos devem retornar resultado em até 1s em condições normais de uso. |
 | RNF06 | Confiabilidade | Falhas de conexão ou do sistema não devem corromper ou apagar dados já persistidos (RN57, RN64). |
 | RNF07 | Manutenibilidade | O código deve seguir padronização via ESLint + Prettier e ter cobertura de testes automatizados (Vitest) para as regras de cálculo. |
 | RNF08 | Portabilidade de dados | Relatórios devem poder ser exportados em PDF (jsPDF) e Excel/CSV (ExcelJS). |

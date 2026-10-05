@@ -1,4 +1,4 @@
-# Roadmap e Rastreabilidade
+﻿# Roadmap e Rastreabilidade
 
 > Parte da documentação do Sistema de Gestão Comercial e Financeira.
 > Veja também: [Visão Geral](./visao-geral.md), [Requisitos](./requisitos.md),
@@ -12,7 +12,7 @@
 | RF01 (Login/Logout) | RN01–RN06 |
 | RF02 (Dashboard) | RN07, RN08 |
 | RF03–RF04 (Cadastrar/Calcular) | RN09–RN18 |
-| RF04.1 (Cálculo reverso) | RN09–RN14 |
+| RF04.1 (Preço de venda pela margem) | RN09–RN14 |
 | RF05 (Histórico de cálculos) | RN19, RN20 |
 | RF06 (Excluir cálculo) | RN21–RN24, RN55–RN57 |
 | RF07 (Relatório de cálculo) | RN25–RN27 |
@@ -29,7 +29,7 @@
 
 | Fase | Escopo |
 |---|---|
-| **MVP** | RF01, RF02, RF03, RF04, RF04.1, RF05, RF06 — núcleo de autenticação e cálculo (direto + reverso), com validações essenciais (RN01–RN27). |
+| **MVP** | RF01, RF02, RF03, RF04, RF04.1, RF05, RF06 — núcleo de autenticação e cálculo do preço de venda, com validações essenciais (RN01–RN27). |
 | **v1.1** | RF07 (relatórios de cálculo), RF13 (configurações básicas). |
 | **v1.2** | RF08, RF09, RF10, RF11 — módulo financeiro. |
 | **v1.3** | RF12 (relatórios financeiros), RF14, RF15, RF16. |
@@ -37,7 +37,7 @@
 
 ## 9. Pontos em Aberto para a Equipe
 
-1. Definir as fórmulas exatas do cálculo direto e do cálculo reverso (depende das planilhas do usuário-alvo, ainda a serem coletadas).
+1. Fórmulas do cálculo do preço de venda já definidas: `V = (C + F) / (1 - T - I - M)`. Falta validar com as planilhas do usuário-alvo.
 2. Definir o conjunto de campos obrigatórios de "dados de venda" (RF08) — ex.: quais categorias de custo compõem o custo total.
 3. Definir regra de bloqueio de login (RN02): tempo de bloqueio e se há reset por e-mail.
 4. Confirmar se `RELATORIO` deve ser persistido (histórico de exportações) ou gerado sob demanda sem registro em banco.

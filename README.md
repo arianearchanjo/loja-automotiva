@@ -1,4 +1,4 @@
-# Loja Automotiva — Sistema de Gestão Comercial e Financeira
+﻿# Loja Automotiva — Sistema de Gestão Comercial e Financeira
 
 > Projeto de Extensão desenvolvido no 4º período do curso de Engenharia de Software.
 
@@ -17,7 +17,7 @@ Sistema acadêmico voltado à **gestão comercial e financeira**, com foco no c�
 
 O usuário poderá realizar login e logout, acessar um dashboard interativo, inserir valores, executar cálculos, salvar resultados e consultar o histórico de operações, além de excluir registros e gerar relatórios com os valores utilizados, os resultados e a data da operação.
 
-Uma das principais funcionalidades é o **cálculo reverso**: o usuário informa o preço pelo qual pretende vender um produto e o sistema calcula quanto poderá gastar com compra, frete, taxas da plataforma e outras despesas.
+Uma das principais funcionalidades é o **cálculo do preço de venda**: o usuário informa custo, frete, taxa da plataforma, imposto e a margem de lucro desejada, e o sistema devolve o preço a cobrar pela fórmula `V = (C + F) / (1 − T − I − M)` — de modo que sobre o valor de venda sobrem exatamente a margem desejada, depois de pagos custo, frete, taxa e imposto.
 
 Na parte financeira, o usuário poderá registrar dados de vendas, visualizar análises e acompanhar receitas, custos e lucros. O sistema também conta com configurações básicas, informações de versão e contato/notas dos desenvolvedores.
 
@@ -29,7 +29,7 @@ Inicialmente serão desenvolvidas as funcionalidades essenciais (MVP), deixando 
 
 - 🔐 Login e logout
 - 📊 Dashboard interativo e personalizável
-- 🧮 Cálculo de preço de venda (direto e reverso)
+- 🧮 Cálculo do preço de venda a partir da margem (V = (C+F)/(1-T-I-M))
 - 🕘 Histórico de cálculos e análises
 - 🗑️ Exclusão de registros (com confirmação)
 - 📄 Geração de relatórios (PDF / Excel)
@@ -46,7 +46,7 @@ Para organizar o desenvolvimento, o projeto foi dividido em quatro frentes, uma 
 |---|---|---|
 | _(a definir)_ | Back-end & Autenticação | Estrutura da API (Node.js/Express), modelagem do banco (Prisma/PostgreSQL), autenticação e sessão (Better Auth), regras de acesso (RN01–RN08, RN65) |
 | _(a definir)_ | Front-end & Dashboard | Interface do painel (React/Tailwind CSS), dashboard interativo e personalizável (RF02, RN07–RN08), integração com a API |
-| _(a definir)_ | Motor de Cálculos | Lógica de cálculo direto e reverso de preço (RF03–RF06, RF04.1), validações de entrada (Zod, RN09–RN18), testes automatizados (Vitest) |
+| _(a definir)_ | Motor de Cálculos | Lógica de cálculo do preço de venda (RF03–RF06, RF04.1), validações de entrada (Zod, RN09–RN18), testes automatizados (Vitest) |
 | _(a definir)_ | Módulo Financeiro & Relatórios | Registro de vendas e análises financeiras (RF08–RF12, RN28–RN43), geração de gráficos (Chart.js) e exportação de relatórios (jsPDF/ExcelJS) |
 
 > 💡 As frentes são interdependentes — por exemplo, o dashboard consome dados do motor de cálculos e do módulo financeiro. Alinhamentos periódicos entre a equipe são recomendados para manter os contratos de API (rotas, formatos de dados) consistentes entre as partes.
@@ -133,7 +133,7 @@ npm run dev
 
 | Fase | Escopo |
 |---|---|
-| **MVP** | Login/logout, dashboard, cálculo de preço (direto e reverso), histórico e exclusão |
+| **MVP** | Login/logout, dashboard, cálculo do preço de venda, histórico e exclusão |
 | **v1.1** | Relatórios de cálculo, configurações básicas |
 | **v1.2** | Módulo financeiro (registro de vendas e análises) |
 | **v1.3** | Relatórios financeiros, contato/notas do desenvolvedor, tempo de uso, versão |
