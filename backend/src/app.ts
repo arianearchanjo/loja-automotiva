@@ -3,6 +3,7 @@ import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { env } from "./env.js";
 import { auth } from "./lib/auth.js";
+import { prisma } from "./lib/prisma.js";
 import { calculosRouter } from "./routes/calculos.js";
 import { simulacaoRouter } from "./routes/simulacao.js";
 import { vendasRouter } from "./routes/vendas.js";
@@ -10,7 +11,6 @@ import { analisesRouter } from "./routes/analises.js";
 import {
   registerFailure,
   registerSuccess,
-  loginGuard,
 } from "./lib/login-guard.js";
 
 export const app: Express = express();
@@ -24,9 +24,26 @@ app.use(
 app.use(express.json());
 
 // Better Auth expõe suas rotas em /api/auth
+app.get("/api/auth/setup-status", async (_req: Request, res: Response) => {
+  const contaCriada = (await prisma.usuario.count({ take: 1 })) > 0;
+  res.json({ contaCriada });
+});
+
 app.all(
   "/api/auth/*",
   async (req: Request, res: Response) => {
+    const criandoConta = req.method === "POST" && req.path.includes("/sign-up");
+
+    if (criandoConta) {
+      const contaJaCriada = (await prisma.usuario.count({ take: 1 })) > 0;
+      if (contaJaCriada) {
+        res.status(403).json({
+          error: "A conta de acesso já foi criada. A criação é permitida apenas uma vez.",
+        });
+        return;
+      }
+    }
+
     try {
       const handler = toNodeHandler(auth);
 
