@@ -1,10 +1,18 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { authClient } from "../lib/auth-client";
 
-export function ProtectedRoute() {
-  const { data, isPending } = authClient.useSession();
+interface SessionData {
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+  } | null;
+}
 
-  if (isPending) {
+export function ProtectedRoute() {
+  const session = authClient.useSession() as { data: SessionData | null; isPending: boolean };
+
+  if (session.isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted">Carregando...</p>
@@ -12,7 +20,7 @@ export function ProtectedRoute() {
     );
   }
 
-  if (!data) {
+  if (!session.data?.user) {
     return <Navigate to="/login" replace />;
   }
 

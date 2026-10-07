@@ -1,6 +1,14 @@
 import { type ReactNode, createContext, useContext } from "react";
 import { authClient } from "./auth-client";
 
+interface SessionData {
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+  } | null;
+}
+
 interface User {
   id: string;
   name: string;
@@ -14,16 +22,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data, isPending } = authClient.useSession();
+function toUser(sessionUser: { id: string; name?: string; email?: string } | null | undefined): User | null {
+  if (!sessionUser) return null;
+  return {
+    id: sessionUser.id,
+    name: sessionUser.name ?? "",
+    email: sessionUser.email ?? "",
+  };
+}
 
-  const sessionUser = data?.user ?? null;
-  const user: User | null = sessionUser
-    ? { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email }
-    : null;
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const session = authClient.useSession() as { data: SessionData | null; isPending: boolean };
+
+  const user = toUser(session.data?.user ?? null);
 
   return (
-    <AuthContext.Provider value={{ user, loading: isPending }}>
+    <AuthContext.Provider value={{ user, loading: session.isPending }}>
       {children}
     </AuthContext.Provider>
   );
