@@ -21,7 +21,6 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -45,9 +44,6 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0",
     "vitest": "^2.1.8"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "allowScripts": {
     "@prisma/client@6.19.3": true,
