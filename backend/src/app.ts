@@ -26,7 +26,6 @@ app.use(express.json());
 // Better Auth expõe suas rotas em /api/auth
 app.all(
   "/api/auth/*",
-  loginGuard,
   async (req: Request, res: Response) => {
     try {
       const handler = toNodeHandler(auth);
