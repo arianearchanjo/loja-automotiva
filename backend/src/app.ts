@@ -27,22 +27,27 @@ app.use(express.json());
 app.all(
   "/api/auth/*",
   loginGuard,
-  (req: Request, res: Response) => {
-    const handler = toNodeHandler(auth);
+  async (req: Request, res: Response) => {
+    try {
+      const handler = toNodeHandler(auth);
 
-    res.on("finish", () => {
-      if (req.path.includes("/sign-in") && req.method === "POST") {
-        const email = (req.body?.email ?? "").toString().toLowerCase();
-        if (!email) return;
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          registerFailure(email);
-        } else {
-          registerSuccess(email);
+      res.on("finish", () => {
+        if (req.path.includes("/sign-in") && req.method === "POST") {
+          const email = (req.body?.email ?? "").toString().toLowerCase();
+          if (!email) return;
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            registerFailure(email);
+          } else {
+            registerSuccess(email);
+          }
         }
-      }
-    });
+      });
 
-    return handler(req, res);
+      return handler(req, res);
+    } catch (error) {
+      console.error("[auth] erro no handler:", error);
+      res.status(500).json({ message: "Erro interno no processamento de autenticação." });
+    }
   },
 );
 
