@@ -1,7 +1,10 @@
 import { createAuthClient } from "better-auth/react";
 
-// Sem VITE_API_URL o cliente usa a mesma origem (localhost:5173 em dev; o
-// domínio do front em produção, onde o Vercel faz proxy de /api para o backend).
+// Em desenvolvimento, VITE_API_URL pode apontar para o backend local.
+// Em produção, usa a mesma origem: o Vercel proxy encaminha /api para o backend.
+const isDev = import.meta.env.DEV;
+const viteApiUrl = import.meta.env.VITE_API_URL;
+
 export const authClient = createAuthClient(
-  import.meta.env.VITE_API_URL ? { baseURL: import.meta.env.VITE_API_URL } : {},
+  isDev && viteApiUrl ? { baseURL: viteApiUrl } : {},
 );
