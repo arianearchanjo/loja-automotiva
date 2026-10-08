@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Card } from "../components/ui";
+import { authClient } from "../lib/auth-client";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -15,19 +16,15 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/sign-in/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+      const { error: signInError } = await authClient.signIn.email({
+        body: { email, password },
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (res.status === 429) {
+      if (signInError) {
+        if (signInError.status === 429) {
           throw new Error("Muitas tentativas. Tente novamente em alguns minutos.");
         }
-        throw new Error(data.message || "E-mail ou senha inválidos.");
+        throw new Error(signInError.message || "E-mail ou senha inválidos.");
       }
 
       navigate("/");
