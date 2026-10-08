@@ -17,7 +17,8 @@ export default function Login() {
 
     try {
       const { error: signInError } = await authClient.signIn.email({
-        body: { email, password },
+        email,
+        password,
       });
 
       if (signInError) {
