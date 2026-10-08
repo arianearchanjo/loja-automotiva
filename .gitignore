@@ -29,5 +29,4 @@ Thumbs.db
 coverage/
 
 # Prisma
-backend/prisma/migrations/*.sql
-!backend/prisma/migrations/migration_lock.toml
+backend/prisma/migrations/dev.db*
