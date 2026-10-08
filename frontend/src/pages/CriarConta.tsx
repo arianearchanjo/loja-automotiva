@@ -29,11 +29,25 @@ export default function CriarConta() {
   const [sucesso, setSucesso] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/setup-status", { credentials: "include" })
+    const controlador = new AbortController();
+    const timer = setTimeout(() => controlador.abort(), 8000);
+
+    fetch("/api/auth/setup-status", {
+      credentials: "include",
+      signal: controlador.signal,
+    })
       .then((res) => (res.ok ? res.json() : { contaCriada: true }))
       .then((dados) => setContaCriada(Boolean(dados?.contaCriada)))
       .catch(() => setContaCriada(true))
-      .finally(() => setStatusCarregando(false));
+      .finally(() => {
+        clearTimeout(timer);
+        setStatusCarregando(false);
+      });
+
+    return () => {
+      clearTimeout(timer);
+      controlador.abort();
+    };
   }, []);
 
   useEffect(() => {
