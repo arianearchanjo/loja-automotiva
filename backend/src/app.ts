@@ -25,8 +25,15 @@ app.use(express.json());
 
 // Better Auth expõe suas rotas em /api/auth
 app.get("/api/auth/setup-status", async (_req: Request, res: Response) => {
-  const contaCriada = (await prisma.usuario.count({ take: 1 })) > 0;
-  res.json({ contaCriada });
+  try {
+    const contaCriada = (await prisma.usuario.count({ take: 1 })) > 0;
+    res.json({ contaCriada });
+  } catch (error) {
+    console.error("[setup-status] erro de banco:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 });
 
 app.all(
