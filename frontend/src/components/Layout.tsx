@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { authClient } from "../lib/auth-client";
 
 function IconDashboard() {
   return (
@@ -79,10 +80,7 @@ export default function Layout({ children }: { children?: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/sign-out", {
-      method: "POST",
-      credentials: "include",
-    });
+    await authClient.signOut();
     navigate("/login");
   };
 

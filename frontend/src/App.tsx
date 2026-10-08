@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
-import CriarConta from "./pages/CriarConta";
 import Dashboard from "./pages/Dashboard";
 import Calculos from "./pages/Calculos";
 import NovoCalculo from "./pages/NovoCalculo";
@@ -36,10 +35,6 @@ function AppRoutes() {
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login />}
-      />
-      <Route
-        path="/criar-conta"
-        element={user ? <Navigate to="/" replace /> : <CriarConta />}
       />
       <Route
         path="/"
