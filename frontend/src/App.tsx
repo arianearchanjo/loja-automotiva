@@ -38,7 +38,7 @@ function AppRoutes() {
         element={user ? <Navigate to="/" replace /> : <Login />}
       />
       <Route
-        path="/sign-in"
+        path="/criar-conta"
         element={user ? <Navigate to="/" replace /> : <CriarConta />}
       />
       <Route

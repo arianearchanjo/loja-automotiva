@@ -4,6 +4,7 @@
     { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/dist/index.html" }
+    { "src": "/api/(.*)", "dest": "https://fagom-shop-backend.vercel.app/api/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
